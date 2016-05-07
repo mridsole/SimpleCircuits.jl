@@ -3,6 +3,8 @@
 module SimpleCircuits
 
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
+include("components.jl")
 
+export Port, Resistor, Capacitor, Inductor
 
 end
