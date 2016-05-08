@@ -16,8 +16,20 @@ end
 
 # merge the connections of the second node into the first, then disconnect the
 # second node from everything
-function merge!(node1::Node, node2::Node)
+function merge!(circ::Circuit, node1::Node, node2::Node)
+	
+	# if the nodes are the same, quit now
+	if node1 == node2 return end
+	
+	# copy all the ports over, also removing them from node 1
+	for port in node2.ports
+		port.node = node1
+		push!(node1.ports, port)
+		delete!(node2.ports, port)
+	end
 
+	# remove node 2 from the circuit
+	delete!(circ.nodes, node2)
 end
 	
 # connect two ports together in a circuit
@@ -85,7 +97,10 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 			end
 		else
 			
-			# when the ports are on different nodes, we have to try and merge them
-			
+			# when the ports are on different nodes, we have to merge them
+			merge!(circ, p1.node, p2.node)
+
+			# now check the node name
+
 		end
 end
