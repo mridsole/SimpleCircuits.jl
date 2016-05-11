@@ -67,6 +67,9 @@ end
 
 # resistor
 type Resistor <: Component
+
+	# component name, not essential
+	name::ASCIIString
 	
 	# the resistance, in Ohms
 	R::Float64
@@ -77,7 +80,7 @@ type Resistor <: Component
 	p2::Port
 
 	function Resistor(R::Float64)
-		this = new(R, Port(), Port())
+		this = new("", R, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
 	end
@@ -86,6 +89,9 @@ end
 # capacitor
 type Capacitor <: Component
 
+	# component name, not essential
+	name::ASCIIString
+
 	# the capacitance, in Farads
 	C::Float64
 
@@ -93,7 +99,7 @@ type Capacitor <: Component
 	p2::Port
 
 	function Capacitor(C::Float64)
-		this = new(C, Port(), Port())
+		this = new("", C, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
 	end
@@ -102,6 +108,9 @@ end
 # inductor
 type Inductor <: Component
 
+	# component name, not essential
+	name::ASCIIString
+
 	# the inductance, in Henrys
 	L::Float64
 
@@ -109,7 +118,7 @@ type Inductor <: Component
 	p2::Port
 
 	function Inductor(L::Float64)
-		this = new(L, Port(), Port())
+		this = new("", L, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
 	end
@@ -117,6 +126,9 @@ end
 
 # constant/DC voltage source
 type DCVoltageSource <: Component
+
+	# component name, not essential
+	name::ASCIIString
 
 	# the source voltage
 	V::Float64
@@ -126,7 +138,7 @@ type DCVoltageSource <: Component
 	pLow::Port
 
 	function DCVoltageSource(V::Float64)
-		this = new(V, Port(), Port())
+		this = new("", V, Port(), Port())
 		this.pHigh.component = this
 		this.pLow.component = this
 	end

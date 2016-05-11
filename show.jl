@@ -1,5 +1,18 @@
 # methods for printing components in the REPL
+
 port_node_str(p::Port) = typeof(p.node) == Node ? p.node.name : "floating"
+
+function port_id_str(p::Port)
+
+	port_id_str = ""
+
+	for fieldsym in fieldnames(typeof(p.component))
+		if p.component.(fieldsym) == p
+			port_id_str = string(fieldsym)
+	end end
+
+	return port_id_str
+end
 
 # show a port
 function show(io::IO, x::Port)
@@ -12,18 +25,14 @@ function show(io::IO, x::Port)
 
 	# finding the port id string: compare to all fields of the component
 	# there should be exactly one match here - if not something's very wrong
-	port_id_str = ""
-	for fieldsym in fieldnames(typeof(x.component))
-		if x.component.(fieldsym) == x
-			port_id_str = string(fieldsym)
-	end end
+	port_str = port_id_str(x)
 
 	# get the node name, if one is connected
 	if !is_floating(x)
-		print(io, "port " * port_id_str * " on a " * component_type_name(x.component) * 
+		print(io, "port " * port_str * " on a " * component_type_name(x.component) * 
 			" connected to node \"" * x.node.name * "\"")
 	else
-		print(io, "floating port " * port_id_str * " on a " * 
+		print(io, "floating port " * port_str * " on a " * 
 			component_type_name(x.component))
 	end
 end
@@ -56,4 +65,17 @@ function show(io::IO, l::Inductor)
 	println(io, "L: " * string(l.L))
 	println(io, "p1: " * port_node_str(l.p1))
 	print(io, "p2: " * port_node_str(l.p2))
+end
+
+# show a node
+function show(io::IO, node::Node)
+	
+	# need to print the name of the node, and each component
+	# that's connected, and the pin by which it's connected
+	println(io, "Node: " * node.name)
+
+	for port in node.ports
+		println(io, "	port " * port_id_str(port) * " on " 
+		* component_type_name(port.component) * " " * port.component.name)
+	end
 end
