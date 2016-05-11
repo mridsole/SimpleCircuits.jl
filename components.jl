@@ -76,7 +76,6 @@ type Resistor <: Component
 	p1::Port
 	p2::Port
 
-	# constructor for client
 	function Resistor(R::Float64)
 		this = new(R, Port(), Port())
 		this.p1.component = this
@@ -131,4 +130,25 @@ type DCVoltageSource <: Component
 		this.pHigh.component = this
 		this.pLow.component = this
 	end
+end
+
+# check if a port is floating or not
+# currently this is implemented as port.node == nothing, but this 
+# is messy and will probably change in the future
+is_floating(p::Port) = p.node == nothing
+
+# obtain the name of a component type
+function component_type_name(c)
+	
+	# for now assume all component types are those defined within the
+	# SimpleCircuits module (found in components.jl)
+	ret_str = string(typeof(c))
+
+	# cut off the SimpleCircuits. part of the string if it's there
+	search_res = search(ret_str, "SimpleCircuits.")
+	if search_res.stop > -1 && search_res.stop < length(ret_str)
+		ret_str = ret_str[(search_res.stop + 1):end]
+	end
+
+	return ret_str
 end

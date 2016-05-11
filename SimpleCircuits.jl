@@ -3,15 +3,18 @@
 
 module SimpleCircuits
 
-# need to overwrite some base methods
-import Base.merge!
-
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
 include("components.jl")
-export Circuit, Port, Resistor, Capacitor, Inductor
+export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource
 
 # methods for constructing circuits via connections
+import Base.merge!
 include("connections.jl")
 export merge!, connect!
+
+# display methods
+import Base.show
+include("show.jl")
+export show
 
 end

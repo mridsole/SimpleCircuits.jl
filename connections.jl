@@ -1,10 +1,5 @@
 # functions for constructing a circuit via adding connections
 
-# check if a port is floating or not
-# currently this is implemented as port.node == nothing, but this 
-# is messy and will probably change in the future
-is_floating(p::Port) = p.node == nothing
-
 # check if a node name's already in use
 function node_name_in_use(circ::Circuit, name::ASCIIString)
 
@@ -114,4 +109,6 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 			end
 		end
 	end
+
+	return nothing
 end
