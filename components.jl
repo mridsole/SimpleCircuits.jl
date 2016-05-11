@@ -23,6 +23,9 @@ type Port
 	# might be an alternative with parametric types
 	node::Any
 
+	# TODO: investigate accessor function method suggested by Benzanson
+	# i.e use node(p::Port)
+
 	# upwards reference to this port's component
 	component::Component
 
@@ -39,7 +42,12 @@ type Node
 	name::ASCIIString
 
 	Node() = new(Set{Port}(), "")
-	Node(ports::Set{Port}) = new(ports, "")
+	Node(ports::Set{Port}, name::ASCIIString) = new(ports, name)
+
+	# node must belong to a circuit
+
+	# need to do more than this - check if name is in use
+	# Node(ports::Set{Port}, name::ASCIIString) = new(ports, name)
 end
 
 # a Circuit is just a set of nodes (maybe with some other data too?)
@@ -52,7 +60,7 @@ type Circuit
 	autonamed_nodes::Int64
 	
 	# construct empty circuit
-	Circuit() = new([], 0)
+	Circuit() = new(Set{Node}([]), 0)
 end
 
 # type definitions for circuit components
@@ -70,7 +78,7 @@ type Resistor <: Component
 
 	# constructor for client
 	function Resistor(R::Float64)
-		this = new(R, Port(nothing, NullComponent()), Port(nothing, NullComponent()))
+		this = new(R, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
 	end
@@ -86,7 +94,7 @@ type Capacitor <: Component
 	p2::Port
 
 	function Capacitor(C::Float64)
-		this = new(C, Port(nothing, NullComponent()), Port(nothing, NullComponent()))
+		this = new(C, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
 	end
@@ -102,7 +110,7 @@ type Inductor <: Component
 	p2::Port
 
 	function Inductor(L::Float64)
-		this = new(L, Port(nothing, NullComponent()), Port(nothing, NullComponent()))
+		this = new(L, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
 	end
@@ -119,7 +127,8 @@ type DCVoltageSource <: Component
 	pLow::Port
 
 	function DCVoltageSource(V::Float64)
-		this = new(V, Port(nothing, NullComponent()), Port(nothing, NullComponent()))
+		this = new(V, Port(), Port())
 		this.pHigh.component = this
 		this.pLow.component = this
 	end
+end

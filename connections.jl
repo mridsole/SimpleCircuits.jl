@@ -56,6 +56,9 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 		p1.node = new_node
 		p2.node = new_node
 
+		# add new node to the circuit
+		push!(circ.nodes, new_node)
+
 	elseif (is_floating(p1) && !is_floating(p2)) ||
 		(is_floating(p2) && !is_floating(p1))
 		# CASE 2: one port is floating but one isn't
@@ -82,6 +85,7 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 		
 		# add the currently floating connection in
 		push!(p_existing.node.ports, p_floating)
+
 	else
 		# CASE 3: they're both connected - if not to the same node, then we 
 		# have to merge nodes
@@ -101,6 +105,13 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 			merge!(circ, p1.node, p2.node)
 
 			# now check the node name
-
+			if name != "" && name != p1.node.name
+				if node_name_in_use(circ, name)
+					error("The provided node name is already in use.")
+				else
+					p1.node.name = name
+				end
+			end
 		end
+	end
 end
