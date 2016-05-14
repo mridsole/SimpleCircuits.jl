@@ -32,7 +32,7 @@ type Port
 	Port() = new(nothing, NullComponent())
 end
 
-# the user doesn't need to worry about this
+# the user doesn't need to worry about this (or do they??)
 type Node
 	
 	# list of connected ports
@@ -147,11 +147,6 @@ type DCVoltageSource <: Component
 		this.pLow.component = this
 	end
 end
-
-# check if a port is floating or not
-# currently this is implemented as port.node == nothing, but this 
-# is messy and will probably change in the future
-is_floating(p::Port) = p.node == nothing
 
 # obtain the name of a component type
 function component_type_name(c)

@@ -10,7 +10,8 @@ export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource
 # methods for constructing circuits via connections
 import Base.merge!
 include("connections.jl")
-export merge!, connect!
+export is_floating, node_name_in_use, is_connected, port_belongs
+export merge!, connect!, disconnect!
 
 # display methods
 import Base.show

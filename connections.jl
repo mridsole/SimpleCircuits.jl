@@ -1,5 +1,10 @@
 # functions for constructing a circuit via adding connections
 
+# check if a port is floating or not
+# currently this is implemented as port.node == nothing, but this 
+# is messy and will probably change in the future
+is_floating(p::Port) = p.node == nothing
+
 # check if a node name's already in use
 function node_name_in_use(circ::Circuit, name::ASCIIString)
 
@@ -9,26 +14,17 @@ function node_name_in_use(circ::Circuit, name::ASCIIString)
 	return false
 end
 
-# check if all the connections on a port belong to the circuit
+# check if the port is connected to a node in the given circuit
 function port_belongs(circ::Circuit, port::Port)
-    
-    for node in port.nodes
-        if !(node in circ.nodes || node == circ.gnd)
-            return false
-    end end
 
-    return true
+    return port.node in circ.nodes
 end
 
 # check if two ports are connected
 function is_connected(p1::Port, p2::Port)
     
-    # if they're connected there's a node that's common to both p.nodes
-    for n1 in p1.nodes, n2 in p2.nodes
-        if n1 == n2 return true end
-    end
-
-    return false
+    # if they're connected, their nodes are the same, and they're not floating
+    return p1.node == p2.node && !is_floating(p1)
 end
 
 # merge the connections of the second node into the first, then disconnect the
@@ -136,6 +132,8 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 end
 
 # connect a port directly to a node
+# this doesn't delete connections - if the port is already on a node,
+# they will be merged
 function connect!(circ::Circuit, port::Port, node::Node)
 
     # check if the node actually belongs to the provided circuit
@@ -148,16 +146,41 @@ function connect!(circ::Circuit, port::Port, node::Node)
         error("The given port doesn't belong to the given circuit.")
     end
 
-    # assuming port has no connections on a different circuit, there's
-    # only two cases here - either it's already on the node or not
+    # if the port is floating, connect it and we're done
+    if is_floating(port)
+        port.node = node
+        return
+    end
 
-    # if the port's already on that node
-    if node in port.nodes return end
+    # otherwise, if the port's already connected to this node, just return
+    if port.node == node return end
 
-    # otherwise, 
-    push!(port.nodes, node)
+    # otherwise, merge the two nodes
+    merge!(circ, node, port.node)
 end
 
+function connect!(circ::Circuit, node::Node, port::Port)
+    return connect!(circ, port, node)
+end
+
+# disconnect a port from whatever it's on
+function disconnect!(circ::Circuit, p::Port)
+    
+    # if it's connected, remove it
+    if !is_floating(p)
+        
+        node = p.node
+        delete!(node.ports, p)
+
+        # remove the node if it's got no more connections
+        if isempty(node.ports) delete!(circ.nodes, node) end
+        
+        # TODO: find a way to make sure p.node's type is consistent
+        p.node = nothing
+    end
+end
+
+# this is ambiguous! bad
 function disconnect!(circ::Circuit, p1::Port, p2::Port)
     
     # make sure both ports belong to the circuit
@@ -165,9 +188,14 @@ function disconnect!(circ::Circuit, p1::Port, p2::Port)
         error("Attempted to disconnect a port that doesn't belong to the circuit.")
     end
 
-    # two cases - either the resulting node is not ground and is empty, or not
+    # remove both ports from the node
+    delete!(node.ports, p1)
+    delete!(node.ports, p2)
+
     # if the node is empty then we should remove it
-    node = 
+    if isempty(node.ports) && !(node == circ.gnd)
+        delete!(circ.nodes, node)
+    end
 end
 
 function disconnect!(circ::Circuit, port::Port, node::Node)
