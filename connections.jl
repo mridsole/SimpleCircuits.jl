@@ -9,6 +9,28 @@ function node_name_in_use(circ::Circuit, name::ASCIIString)
 	return false
 end
 
+# check if all the connections on a port belong to the circuit
+function port_belongs(circ::Circuit, port::Port)
+    
+    for node in port.nodes
+        if !(node in circ.nodes || node == circ.gnd)
+            return false
+    end end
+
+    return true
+end
+
+# check if two ports are connected
+function is_connected(p1::Port, p2::Port)
+    
+    # if they're connected there's a node that's common to both p.nodes
+    for n1 in p1.nodes, n2 in p2.nodes
+        if n1 == n2 return true end
+    end
+
+    return false
+end
+
 # merge the connections of the second node into the first, then disconnect the
 # second node from everything
 function merge!(circ::Circuit, node1::Node, node2::Node)
@@ -111,4 +133,56 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 	end
 
 	return nothing
+end
+
+# connect a port directly to a node
+function connect!(circ::Circuit, port::Port, node::Node)
+
+    # check if the node actually belongs to the provided circuit
+    if !(node in circ.nodes || node == circ.gnd)
+        error("Attempted to connect a component to a node on a different circuit.")
+    end
+
+    # check if all the current connections of port are nodes in circ
+    if !port_belongs(circ, port) 
+        error("The given port doesn't belong to the given circuit.")
+    end
+
+    # assuming port has no connections on a different circuit, there's
+    # only two cases here - either it's already on the node or not
+
+    # if the port's already on that node
+    if node in port.nodes return end
+
+    # otherwise, 
+    push!(port.nodes, node)
+end
+
+function disconnect!(circ::Circuit, p1::Port, p2::Port)
+    
+    # make sure both ports belong to the circuit
+    if !(port_belongs(circ, p1) && port_belongs(circ, p2))
+        error("Attempted to disconnect a port that doesn't belong to the circuit.")
+    end
+
+    # two cases - either the resulting node is not ground and is empty, or not
+    # if the node is empty then we should remove it
+    node = 
+end
+
+function disconnect!(circ::Circuit, port::Port, node::Node)
+    
+    # check if the node's in the circuit etc
+    if !(node in circ.nodes || node == circ.gnd)
+        error("Attempted to disconnect a node from a circuit it doesn't belong to.")
+    end
+    
+    # remove the port from the node
+    delete!(port.nodes, node)
+
+    # now if the node is empty, it can be removed from the circuit
+    # (as long as it's not ground!)
+    if node != circ.gnd && isempty(node.ports)
+        delete!(circ.nodes, node)
+    end
 end

@@ -18,6 +18,6 @@ include("show.jl")
 export show
 
 # linear analysis
-
+include("linear.jl")
 
 end

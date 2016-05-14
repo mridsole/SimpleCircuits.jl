@@ -43,6 +43,7 @@ type Node
 
 	Node() = new(Set{Port}(), "")
 	Node(ports::Set{Port}, name::ASCIIString) = new(ports, name)
+    Node(name::ASCIIString) = new(Set{Port}(), name)
 
 	# node must belong to a circuit
 
@@ -58,9 +59,12 @@ type Circuit
 	
 	# how many "unnamed" (automatically named) nodes do we have?
 	autonamed_nodes::Int64
+
+    # the special ground node, reference from which voltages are measured
+    gnd::Node
 	
 	# construct empty circuit
-	Circuit() = new(Set{Node}([]), 0)
+	Circuit() = new(Set{Node}([]), 0, Node("GND"))
 end
 
 # type definitions for circuit components
