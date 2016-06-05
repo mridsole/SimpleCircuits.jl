@@ -8,6 +8,7 @@ include("test_type.jl")
 # fixture for creating circuit 1
 macro circuit1()
     quote
+        # dumps the components into the parent scope
         $(esc(:circ)) = Circuit()
         $(esc(:r1)) = Resistor(5e+3)
         $(esc(:r2)) = Resistor(10e+3)
