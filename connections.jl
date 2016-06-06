@@ -104,6 +104,9 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 		
 		# add the currently floating connection in
 		push!(p_existing.node.ports, p_floating)
+        
+        # add to the floating port
+        p_floating.node = p_existing.node
 
 	else
 		# CASE 3: they're both connected - if not to the same node, then we 
@@ -148,9 +151,9 @@ function connect!(circ::Circuit, port::Port, node::Node)
     end
 
     # check if all the current connections of port are nodes in circ
-    if !port_belongs(circ, port) 
-        error("The given port doesn't belong to the given circuit.")
-    end
+    #if !port_belongs(circ, port) 
+    #    error("The given port doesn't belong to the given circuit.")
+    #end
 
     # if the port is floating, connect it and we're done
     if is_floating(port)
