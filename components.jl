@@ -62,7 +62,11 @@ type Circuit
     gnd::Node
 	
 	# construct empty circuit
-	Circuit() = new(Set{Node}(), 0, Node("GND"))
+    function Circuit() 
+        this = new(Set{Node}(), 0, Node("GND"))
+        push!(this.nodes, this.gnd)
+        return this
+    end
 end
 
 # type definitions for circuit components
@@ -85,6 +89,7 @@ type Resistor <: TwoPortComponent
 		this = new("", R, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
+        return this
 	end
 end
 
@@ -104,6 +109,7 @@ type Capacitor <: TwoPortComponent
 		this = new("", C, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
+        return this
 	end
 end
 
@@ -123,6 +129,7 @@ type Inductor <: TwoPortComponent
 		this = new("", L, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
+        return this
 	end
 end
 
@@ -143,6 +150,7 @@ type DCVoltageSource <: TwoPortComponent
 		this = new("", V, Port(), Port())
 		this.pHigh.component = this
 		this.pLow.component = this
+        return this
 	end
 end
 
@@ -160,6 +168,7 @@ type DCCurrentSource <: TwoPortComponent
         this = new("", I, Port(), Port())
         this.pIn.component = this
         this.pOut.component = this
+        return this
     end
 end
 
@@ -196,7 +205,29 @@ function other_end(port::Port)
     
     # this only makes sense for two terminal components
     @assert typeof(port.component) <: TwoPortComponent
+
+    # a hack for now - really need to do something about this
+    if typeof(port.component) == DCVoltageSource
+        if port == port.component.pHigh
+            if port.component.pLow == nothing return nothing end
+            return port.component.pLow.node
+        else
+            if port.component.pHigh == nothing return nothing end
+            return port.component.pHigh.node
+        end
+    end
     
+    # and this ...
+    if typeof(port.component) == DCCurrentSource
+        if port == port.component.pOut
+            if port.component.pIn == nothing return nothing end
+            return port.component.pIn.node
+        else
+            if port.component.pOut == nothing return nothing end
+            return port.component.pOut.node
+        end
+    end
+
     # TODO: there are some two port components defined (the sources) that 
     # don't follow this convention ... figure out what to do for those.
     # (should we store the two ports in a pair instead?)

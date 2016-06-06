@@ -23,9 +23,9 @@ Test("connection test 1 - construct circuit 1", function()
 
     # this test constructs circuit 1, but does some testing along the way
     # so it doesn't use the fixture macro
-
+    
     circ = Circuit()
-
+    
     r1 = Resistor(5e+3)
     r2 = Resistor(10e+3)
     v_DC = DCVoltageSource(5.)
@@ -43,6 +43,9 @@ Test("connection test 1 - construct circuit 1", function()
     @assert !is_connected(r1.p2, r2.p1)
     @assert !is_connected(r2.p2, v_DC.pLow)
     
+    println(typeof(circ))
+    println(typeof(v_DC.pHigh))
+    println(typeof(r1.p1))
     connect!(circ, v_DC.pHigh, r1.p1)
     connect!(circ, r1.p2, r2.p1)
     connect!(circ, r2.p2, v_DC.pLow)

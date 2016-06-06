@@ -51,28 +51,31 @@ function op(circ::Circuit)
         if node == circ.gnd
             A[i_eqn, i] = 1.
             b[i_eqn] = 0.
+            i_eqn += 1
+            continue
         end
 
         # if there's a voltage source here that we haven't used, then 
         # we should use it to relate two variables
-
+        
         # is there a voltage source connected to this node?
         if is_type_connected(node, DCVoltageSource)
 
-            # if so, we have to use one - if we've used them all, skip this node
-
             # get all DC voltage sources connected directly
-            dcvs_ports = filter(node.ports, p -> typeof(p.component) == DCVoltageSource)
+            dcvs_ports = filter(p -> typeof(p.component) == DCVoltageSource, node.ports)
 
             # filter for sources we haven't used
-            filter!(dcvs_ports, p -> !(p.component in dcvs_used))
+            filter!(p -> !(p.component in dcvs_used), dcvs_ports)
+
+            dcvs_ports = collect(dcvs_ports)
             
             # if there's any sources that haven't been used, use one
             if length(dcvs_ports) > 0
+
                 A[i_eqn, i] = 1.
-                A[i_eqn, node_index(other_end(dcvs_ports[1]))] = -1.
+                A[i_eqn, node_index(circ, other_end(dcvs_ports[1]))] = -1.
                 b[i_eqn] = dcvs_ports[1].component.V
-                append!(dcvs_used, dcvs_ports[1])
+                push!(dcvs_used, dcvs_ports[1].component)
                 i_eqn += 1
             end
             
@@ -94,13 +97,27 @@ function op(circ::Circuit)
             # if it's an impedance
             if typeof(port.component) == Resistor
                 A[i_eqn, i] -= 1 / port.component.R
-                A[i_eqn, node_index(other_end(port))] = 1 / port.component.R
+                A[i_eqn, node_index(circ, other_end(port))] = 1 / port.component.R
             end
         end
 
         i_eqn += 1
     end
+    
+    # we've constructed the linear system - now solve it
+    # of course we will need to do more than this for non-linear operating point analysis
+    
+    # need some way of guaranteeing this isn't singular
+    # should happen when we replace with non-ideal sources
+    sol_raw = A \ b
 
+    # return a dict from nodes to their voltages
+    soln = Dict{Node, Float64}()
+    for i = 1:n_nodes
+        soln[nodes_vec[i]] = sol_raw[i]
+    end
+
+    return soln
 end
 
 

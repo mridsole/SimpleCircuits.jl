@@ -26,5 +26,7 @@ Test("operating point test 1", function()
     # do the analysis
     op(circ)
 
+    # ensure the values are correct
+
 end )
 ])

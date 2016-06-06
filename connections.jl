@@ -7,8 +7,8 @@ is_floating(p::Port) = p.node == nothing
 
 # is there a ctype component connected to this node?
 function is_type_connected(node::Node, ctype::DataType)
-    
-    return length(filter(x->(typeof(x) == ctype), node.ports)) > 0
+
+    return length(filter(x->(typeof(x.component) == ctype), node.ports)) > 0
 end
 
 # check if a node name's already in use
