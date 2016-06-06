@@ -2,6 +2,7 @@
 
 # supertype of all circuit components
 abstract Component
+abstract TwoPortComponent <: Component
 
 # an arbitrary, empty concrete Component, used internally when constructing
 # Resistors, Capacitors, etc (see their constructors)
@@ -23,7 +24,7 @@ type Port
 	# might be an alternative with parametric types
 	node::Any
 
-	# TODO: investigate accessor function method suggested by Benzanson
+	# TODO: investigate accessor function method
 	# i.e use node(p::Port)
 
 	# upwards reference to this port's component
@@ -55,7 +56,7 @@ end
 # (describes the connections between components)
 type Circuit
 
-	nodes::Set{Node}
+	nodes::Vector{Node}
 	
 	# how many "unnamed" (automatically named) nodes do we have?
 	autonamed_nodes::Int64
@@ -64,13 +65,13 @@ type Circuit
     gnd::Node
 	
 	# construct empty circuit
-	Circuit() = new(Set{Node}([]), 0, Node("GND"))
+	Circuit() = new(Vector{Node}(), 0, Node("GND"))
 end
 
 # type definitions for circuit components
 
 # resistor
-type Resistor <: Component
+type Resistor <: TwoPortComponent
 
 	# component name, not essential
 	name::ASCIIString
@@ -91,7 +92,7 @@ type Resistor <: Component
 end
 
 # capacitor
-type Capacitor <: Component
+type Capacitor <: TwoPortComponent
 
 	# component name, not essential
 	name::ASCIIString
@@ -110,7 +111,7 @@ type Capacitor <: Component
 end
 
 # inductor
-type Inductor <: Component
+type Inductor <: TwoPortComponent
 
 	# component name, not essential
 	name::ASCIIString
@@ -129,7 +130,7 @@ type Inductor <: Component
 end
 
 # constant/DC voltage source
-type DCVoltageSource <: Component
+type DCVoltageSource <: TwoPortComponent
 
 	# component name, not essential
 	name::ASCIIString
@@ -148,6 +149,23 @@ type DCVoltageSource <: Component
 	end
 end
 
+type DCCurrentSource <: TwoPortComponent
+
+    name::ASCIIString
+
+    I::Float64
+
+    # the ports
+    pIn::Port
+    pOut::Port
+
+    function DCCurrentSource(I::Float64)
+        this = new("", I, Port(), Port())
+        this.pIn.component = this
+        this.pOut.component = this
+    end
+end
+
 # obtain the name of a component type
 function component_type_name(c)
 	
@@ -163,3 +181,18 @@ function component_type_name(c)
 
 	return ret_str
 end
+
+# get the index of a node in a circuit
+function node_index(circ::Circuit, node::Node)
+    
+    matches = find(x->x == node, circ.nodes)
+    assert(matches <= 1)
+    return length(matches) == 0 ? -1 : matches[1]
+end
+
+# given a port on a two port component, return the node on the other end
+# if it's floating, return 'nothing' as per normal
+function other_end(port::Port)
+    
+end
+

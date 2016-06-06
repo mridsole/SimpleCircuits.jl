@@ -23,11 +23,12 @@ end
 # array of test functions - true = passed, error = failure
 connection_tests = Array{Test, 1}([
 
-Test("connection test 1", function()
+Test("connection test 1 - construct circuit 1", function()
 
     # this test constructs circuit 1, but does some testing along the way
     # so it doesn't use the fixture macro
 
+    println("blop")
     circ = Circuit()
 
     r1 = Resistor(5e+3)
@@ -46,7 +47,7 @@ Test("connection test 1", function()
     @assert !is_connected(v_DC.pHigh, r1.p1)
     @assert !is_connected(r1.p2, r2.p1)
     @assert !is_connected(r2.p2, v_DC.pLow)
-
+    
     connect!(circ, v_DC.pHigh, r1.p1)
     connect!(circ, r1.p2, r2.p1)
     connect!(circ, r2.p2, v_DC.pLow)
@@ -60,7 +61,7 @@ Test("connection test 1", function()
     @assert is_connected(r2.p2, v_DC.pLow)
 end ),
 
-Test("connection test 2", function()
+Test("connection test 2 - test circuit 1 connections", function()
     
     # test our circuit 1 construction macro
     @circuit1

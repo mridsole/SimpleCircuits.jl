@@ -18,7 +18,11 @@ import Base.show
 include("show.jl")
 export show
 
+# operating point analysis
+include("op.jl")
+export op
+
 # linear analysis
-include("linear.jl")
+# include("linear.jl")
 
 end

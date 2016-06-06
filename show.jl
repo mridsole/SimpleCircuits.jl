@@ -14,6 +14,18 @@ function port_id_str(p::Port)
 	return port_id_str
 end
 
+# show a circuit
+function show(io::IO, circ::Circuit)
+    
+    #= need to print:
+        - number of nodes
+        - number of components
+    =#
+    
+    # TODO: figure out better format for displaying a circuit
+    print(io, "Circuit(nodes = " * string(length(circ.nodes)) * ")")
+end
+
 # show a port
 function show(io::IO, x::Port)
 	

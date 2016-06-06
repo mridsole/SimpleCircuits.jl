@@ -16,13 +16,15 @@ function run_all_tests()
     println("Running all tests ...\n")
     
     for test in tests
-        try 
-            test.func() 
-            println(test.name * " passed")
-        catch(err)
-            println(test.name * " failed: ")
-            println(string(err))
-            println("")
-        end
+        passed, msg = test()
+        println(msg)
+#        try 
+#            test.func() 
+#            println(test.name * " passed")
+#        catch(err)
+#            println(test.name * " failed: ")
+#            println(string(err))
+#            println("")
+#        end
     end
 end

@@ -5,6 +5,12 @@
 # is messy and will probably change in the future
 is_floating(p::Port) = p.node == nothing
 
+# is there a ctype component connected to this node?
+function is_type_connected(node::Node, ctype::DataType)
+    
+    return length(find(x->(typeof(x) == ctype), node.ports)) > 0
+end
+
 # check if a node name's already in use
 function node_name_in_use(circ::Circuit, name::ASCIIString)
 
@@ -181,6 +187,7 @@ function disconnect!(circ::Circuit, p::Port)
 end
 
 # this is ambiguous! bad
+# TODO: sort this one out ...
 function disconnect!(circ::Circuit, p1::Port, p2::Port)
     
     # make sure both ports belong to the circuit
