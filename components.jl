@@ -10,10 +10,7 @@ type NullComponent <: Component end
 
 # components also have terminals, or ports
 # i.e. resistors, capacitors, inductors are two terminal components
-# they also happen to be non-polar but for the sake of generality
-# we'll store separate connections (we'll have to do this for diodes anyway,
-# and also eventually account for components with more than two ports
-# when we come to transistors and op amps etc
+# while transistors have three ports
 type Port
 
 	# the node it's connected to
@@ -33,7 +30,7 @@ type Port
 	Port() = new(nothing, NullComponent())
 end
 
-# the user doesn't need to worry about this (or do they??)
+# used to describe which ports are connected
 type Node
 	
 	# list of connected ports
@@ -56,7 +53,7 @@ end
 # (describes the connections between components)
 type Circuit
 
-	nodes::Vector{Node}
+	nodes::Set{Node}
 	
 	# how many "unnamed" (automatically named) nodes do we have?
 	autonamed_nodes::Int64
@@ -65,7 +62,7 @@ type Circuit
     gnd::Node
 	
 	# construct empty circuit
-	Circuit() = new(Vector{Node}(), 0, Node("GND"))
+	Circuit() = new(Set{Node}(), 0, Node("GND"))
 end
 
 # type definitions for circuit components
@@ -185,8 +182,9 @@ end
 # get the index of a node in a circuit
 function node_index(circ::Circuit, node::Node)
     
-    matches = find(x->x == node, circ.nodes)
-    assert(matches <= 1)
+    nodes_array = collect(circ.nodes)
+    matches = find(x->x == node, nodes_array)
+    assert(length(matches) <= 1)
     return length(matches) == 0 ? -1 : matches[1]
 end
 
@@ -194,5 +192,20 @@ end
 # if it's floating, return 'nothing' as per normal
 function other_end(port::Port)
     
+    if port == nothing return nothing end
+    
+    # this only makes sense for two terminal components
+    @assert typeof(port.component) <: TwoPortComponent
+    
+    # TODO: there are some two port components defined (the sources) that 
+    # don't follow this convention ... figure out what to do for those.
+    # (should we store the two ports in a pair instead?)
+    if port == port.component.p1
+        if port.component.p2 == nothing return nothing end
+        return port.component.p2.node
+    else
+        if port.component.p1 == nothing return nothing end
+        return port.component.p1.node
+    end
 end
 

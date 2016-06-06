@@ -1,9 +1,5 @@
 # tests for connections.jl and related
-workspace()
-include("../SimpleCircuits.jl")
 using SimpleCircuits
-
-include("test_type.jl")
 
 # fixture for creating circuit 1
 macro circuit1()
@@ -28,7 +24,6 @@ Test("connection test 1 - construct circuit 1", function()
     # this test constructs circuit 1, but does some testing along the way
     # so it doesn't use the fixture macro
 
-    println("blop")
     circ = Circuit()
 
     r1 = Resistor(5e+3)
@@ -72,7 +67,24 @@ Test("connection test 2 - test circuit 1 connections", function()
     @assert is_connected(r2.p2, v_DC.pLow)
 end ),
 
-Test("connection test 3", function()
+Test("connection test 3 - test node_index", function()
+    
+    @circuit1
+    
+    # this is only currently testing that there's no errors ..
+    for node in circ.nodes
+        SimpleCircuits.node_index(circ, node)
+    end
+end),
 
+Test("connection test 4 - test other_end", function()
+    
+    @circuit1
+
+    # test other_end on r1 and r2
+    @assert r1.p2.node == SimpleCircuits.other_end(r1.p1)
+    @assert r1.p1.node == SimpleCircuits.other_end(r1.p2)
+    @assert r2.p2.node == SimpleCircuits.other_end(r2.p1)
+    @assert r2.p1.node == SimpleCircuits.other_end(r2.p2)
 end)
 ])

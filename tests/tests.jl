@@ -1,15 +1,20 @@
 # runs all tests
-
 workspace()
 include("../SimpleCircuits.jl")
 using SimpleCircuits
 
+include("test_type.jl")
+
 # connection tests
 include("connections.jl")
+
+# operating point tests
+include("op.jl")
 
 tests = []
 
 append!(tests, connection_tests)
+append!(tests, op_tests)
 
 function run_all_tests()
 
@@ -18,13 +23,5 @@ function run_all_tests()
     for test in tests
         passed, msg = test()
         println(msg)
-#        try 
-#            test.func() 
-#            println(test.name * " passed")
-#        catch(err)
-#            println(test.name * " failed: ")
-#            println(string(err))
-#            println("")
-#        end
     end
 end

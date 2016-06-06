@@ -28,12 +28,15 @@ function op(circ::Circuit)
     # at this point assume the above conditions are satisfied ..
 
     # construct the system of linear equations
-    n_nodes = length(circ.nodes)
+    nodes_vec = collect(circ.nodes)
+    n_nodes = length(nodes_vec)
+
+    # store the linear system
     A = zeros((n_nodes, n_nodes))
     b = zeros(n_nodes)
     
     # flag which DC voltage sources we've used so far
-    DCVS_used = Set{DCVoltageSource}()
+    dcvs_used = Set{DCVoltageSource}()
     
     # track which equation we're up to
     i_eqn = 1
@@ -42,12 +45,39 @@ function op(circ::Circuit)
     for i = 1:n_nodes
         
         # examine this node
-        node = circ.nodes[i]
+        node = nodes_vec[i]
+
+        # if this node is the ground node, then we set this voltage to zero
+        if node == circ.gnd
+            A[i_eqn, i] = 1.
+            b[i_eqn] = 0.
+        end
+
+        # if there's a voltage source here that we haven't used, then 
+        # we should use it to relate two variables
 
         # is there a voltage source connected to this node?
         if is_type_connected(node, DCVoltageSource)
-            # if we've used this DCVS, we can't say anything else about this node
+
+            # if so, we have to use one - if we've used them all, skip this node
+
+            # get all DC voltage sources connected directly
+            dcvs_ports = filter(node.ports, p -> typeof(p.component) == DCVoltageSource)
+
+            # filter for sources we haven't used
+            filter!(dcvs_ports, p -> !(p.component in dcvs_used))
             
+            # if there's any sources that haven't been used, use one
+            if length(dcvs_ports) > 0
+                A[i_eqn, i] = 1.
+                A[i_eqn, node_index(other_end(dcvs_ports[1]))] = -1.
+                b[i_eqn] = dcvs_ports[1].component.V
+                append!(dcvs_used, dcvs_ports[1])
+                i_eqn += 1
+            end
+            
+            # skip to next node
+            continue
         end
 
         # otherwise, if there are no voltage sources connected, construct the equations
@@ -63,10 +93,12 @@ function op(circ::Circuit)
 
             # if it's an impedance
             if typeof(port.component) == Resistor
-                A[i_eqn, i] += 1 / port.component.R
-                # A[i_eqn, node_index(
+                A[i_eqn, i] -= 1 / port.component.R
+                A[i_eqn, node_index(other_end(port))] = 1 / port.component.R
             end
         end
+
+        i_eqn += 1
     end
 
 end
