@@ -1,5 +1,35 @@
 include("components.jl")
 
+# contains the numerical values for a circuit operating point
+type CircuitOP
+    
+    node_voltages::Dict{Node, Float64}
+    dcvs_currents::Dict{DCVoltageSource, Float64}
+
+    CircuitOP() = new(Dict{Node, Float64}(), Dict{DCVoltageSource, Float64}())
+end
+
+import Base.setindex!, Base.getindex
+
+function Base.setindex!(cop::CircuitOP, val::Float64, node::Node)
+    cop.node_voltages[node] = val 
+end
+
+function Base.setindex!(cop::CircuitOP, val::Float64, dcvs::DCVoltageSource) 
+    cop.dcvs_currents[dcvs] = val 
+end
+
+Base.getindex(cop::CircuitOP, node::Node) = cop.node_voltages[node]
+Base.getindex(cop::CircuitOP, dcvs::DCVoltageSource) = cop.dcvs_currents[dcvs]
+
+function show(io::IO, cop::CircuitOP)
+
+    println(io, "Node voltages: ")
+    println(io, cop.node_voltages)
+    println(io, "DCVoltageSource currents: ")
+    println(io, cop.dcvs_currents)
+end
+
 # methods for linear and non-linear operating point analysis
 
 # find the DC operating point
@@ -27,19 +57,43 @@ function op(circ::Circuit)
     
     # at this point assume the above conditions are satisfied ..
 
-    # construct the system of linear equations
     nodes_vec = collect(circ.nodes)
     n_nodes = length(nodes_vec)
 
-    # store the linear system
-    A = zeros((n_nodes, n_nodes))
-    b = zeros(n_nodes)
+    # before we start, find all the DC voltage sources in the circuit
+    dcv_sources = Set{DCVoltageSource}()
     
-    # flag which DC voltage sources we've used so far
-    dcvs_used = Set{DCVoltageSource}()
+    # TODO: more concise way of doing this?
+    for node in nodes_vec
+        for port in node.ports
+            if typeof(port.component) == DCVoltageSource
+                push!(dcv_sources, port.component)
+            end
+        end
+    end
+    
+    # TODO: look into using an OrderedSet instead (DataStructures.jl ??)
+    dcv_sources = collect(dcv_sources)
+    n_dcvs = length(dcv_sources)
+
+    # store the linear system
+    A = zeros((n_nodes + n_dcvs, n_nodes + n_dcvs))
+    b = zeros(n_nodes + n_dcvs)
+
+    # the variables in the system are ordered as follows (for n nodes and k voltage sources)
+    # v_1, v_2, ... v_n, I_1, I_2, ... I_k
     
     # track which equation we're up to
     i_eqn = 1
+
+    # find index in array, assuming the item occurs exactly once
+    # use this for testing, asserting that it does actually only occur once
+    # TODO: once tested fully, replace with findin
+    function index_of(x::Any, a::Array)
+        indices = find(y->y == x, a)
+        @assert length(indices) == 1
+        return indices[1]
+    end
 
     # for each node, fill a row of the system 
     for i = 1:n_nodes
@@ -55,51 +109,55 @@ function op(circ::Circuit)
             continue
         end
 
-        # if there's a voltage source here that we haven't used, then 
-        # we should use it to relate two variables
-        
-        # is there a voltage source connected to this node?
-        if is_type_connected(node, DCVoltageSource)
-
-            # get all DC voltage sources connected directly
-            dcvs_ports = filter(p -> typeof(p.component) == DCVoltageSource, node.ports)
-
-            # filter for sources we haven't used
-            filter!(p -> !(p.component in dcvs_used), dcvs_ports)
-
-            dcvs_ports = collect(dcvs_ports)
-            
-            # if there's any sources that haven't been used, use one
-            if length(dcvs_ports) > 0
-
-                A[i_eqn, i] = 1.
-                A[i_eqn, node_index(circ, other_end(dcvs_ports[1]))] = -1.
-                b[i_eqn] = dcvs_ports[1].component.V
-                push!(dcvs_used, dcvs_ports[1].component)
-                i_eqn += 1
-            end
-            
-            # skip to next node
-            continue
-        end
-
         # otherwise, if there are no voltage sources connected, construct the equations
         # at this point there can only be impedances and current sources, so set the currents
         # IN through the resistors equal to the current OUT through the sources
         for port in node.ports
+
+            # if it's a voltage source - which one is it? use the corresponding current variable
+            if typeof(port.component) == DCVoltageSource
+                
+                # find the index of the voltage source (we need this to get the current index)
+                dcvs_index = index_of(port.component, dcv_sources)
+
+                # the current convention is from - to +
+                A[i_eqn, dcvs_index + n_nodes] = port == port.component.pHigh ? 1. : -1.
+            end
             
             # if it's a current source
             if typeof(port.component) == DCCurrentSource
+                
                 current_dir = port == port.component.pIn ? 1 : -1
                 b[i_eqn] += current_dir * port.component.I
             end
 
             # if it's an impedance
             if typeof(port.component) == Resistor
-                A[i_eqn, i] -= 1 / port.component.R
-                A[i_eqn, node_index(circ, other_end(port))] = 1 / port.component.R
+
+                A[i_eqn, i] -= 1. / port.component.R
+                A[i_eqn, node_index(circ, other_end(port))] = 1. / port.component.R
             end
         end
+
+        i_eqn += 1
+    end
+
+    # we still need n_dcvs more equations
+    for i = 1:n_dcvs
+
+        dcvs = dcv_sources[i]
+
+        # if either port is floating, we don't have an equation to add
+        if is_floating(dcvs.pHigh) || is_floating(dcvs.pLow) continue end
+
+        # otherwise find the index of each port 
+        pLow_node_index = index_of(dcvs.pLow.node, nodes_vec)
+        pHigh_node_index = index_of(dcvs.pHigh.node, nodes_vec)
+
+        # do the equation
+        A[i_eqn, pHigh_node_index] = 1.
+        A[i_eqn, pLow_node_index] = -1.
+        b[i_eqn] = dcvs.V
 
         i_eqn += 1
     end
@@ -111,13 +169,12 @@ function op(circ::Circuit)
     # should happen when we replace with non-ideal sources
     sol_raw = A \ b
 
-    # return a dict from nodes to their voltages
-    soln = Dict{Node, Float64}()
-    for i = 1:n_nodes
-        soln[nodes_vec[i]] = sol_raw[i]
-    end
+    cop = CircuitOP()
 
-    return soln
+    # return a mapping from nodes to their voltages
+    # and from DCVoltageSources to their currents
+    for i = 1:n_nodes cop[nodes_vec[i]] = sol_raw[i] end
+    for i = 1:n_dcvs cop[dcv_sources[i]] = sol_raw[n_nodes + i] end
+
+    return cop
 end
-
-

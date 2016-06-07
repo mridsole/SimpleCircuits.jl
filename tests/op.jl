@@ -24,7 +24,7 @@ Test("operating point test 1", function()
     @circuit1
 
     # do the analysis
-    op(circ)
+    op(circ) |> println
 
     # TODO: ensure the values are correct
 
@@ -52,6 +52,6 @@ Test("operating point test 2", function()
     connect!(circ, r1.p2, v_DC_2.pHigh)
     connect!(circ, circ.gnd, v_DC_1.pLow)
     
-    op(circ)
+    op(circ) |> println
 end)
 ])
