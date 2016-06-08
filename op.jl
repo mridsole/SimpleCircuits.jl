@@ -22,6 +22,9 @@ end
 Base.getindex(cop::CircuitOP, node::Node) = cop.node_voltages[node]
 Base.getindex(cop::CircuitOP, dcvs::DCVoltageSource) = cop.dcvs_currents[dcvs]
 
+# get voltage at ports (uses the connected node)
+Base.getindex(cop::CircuitOP, port::Port) = cop.node_voltages[port.node]
+
 function show(io::IO, cop::CircuitOP)
 
     println(io, "Node voltages: ")
@@ -40,6 +43,13 @@ function op(circ::Circuit)
     # for non-linear components, solve matrix system
     # at each step, using the gradients of the 
     # non-linear components
+
+    # TODO: since for the majority of circuits, the number of 
+    # connections on a node is generally much smaller than the 
+    # total number of nodes plus the total number of current sources
+    # (which is the number of equations we will have) - therefore
+    # the linear system tends to be sparse
+    # figure out a way to exploit this
     
     # we should return a map from nodes to voltages
     dict = Dict{Node, Float64}()
