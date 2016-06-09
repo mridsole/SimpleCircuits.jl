@@ -3,6 +3,11 @@ workspace()
 include("../SimpleCircuits.jl")
 using SimpleCircuits
 
+# circuit construction fixture macros
+include("test_circuits.jl")
+
+# utility for testing
+# TODO: turns out Base has some similar features, look into those
 include("test_type.jl")
 
 # connection tests
