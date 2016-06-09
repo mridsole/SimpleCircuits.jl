@@ -1,23 +1,5 @@
-# don't actually need this anymore ...
-# escape all symbols in an AST
-function esc_ast!(expr::Expr)
+# c-style unhygenic macros for constructing test circuits
 
-    # depth first
-    for (i, arg) in enumerate(expr.args)
-        if typeof(arg) == Expr
-            esc_ast!(arg)
-        elseif typeof(arg) == Symbol
-            expr.args[i] = esc(arg)
-        end
-    end
-end
-
-function esc_ast(expr::Expr)
-    expr_copy = deepcopy(expr)
-    esc_ast!(expr_copy)
-end
-
-# Test Circuit 1
 macro circuit1()
 
     expr = quote
