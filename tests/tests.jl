@@ -1,6 +1,7 @@
-# runs all tests
-workspace()
-include("../SimpleCircuits.jl")
+
+# submodule included in SimpleCircuits module - don't import this
+module Tests
+
 using SimpleCircuits
 
 # circuit construction fixture macros
@@ -18,8 +19,8 @@ include("op.jl")
 
 tests = []
 
-append!(tests, connection_tests)
-append!(tests, op_tests)
+append!(tests, connection_tests())
+append!(tests, op_tests())
 
 function run_all_tests()
 
@@ -30,3 +31,7 @@ function run_all_tests()
         println(msg)
     end
 end
+
+export run_all_tests
+
+end     # module Tests

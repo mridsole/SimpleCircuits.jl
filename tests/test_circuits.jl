@@ -48,7 +48,6 @@ macro circuit2()
         connect!(circ, r2.p2, v_DC_1.pLow)
         connect!(circ, circ.gnd, r3.p1)
         connect!(circ, r3.p2, v_DC_2.pLow, "Node 3")
-        connect!(circ, v_DC_2.pHigh, r1.p2)
         connect!(circ, r1.p2, v_DC_2.pHigh)
         connect!(circ, circ.gnd, v_DC_1.pLow)
     end

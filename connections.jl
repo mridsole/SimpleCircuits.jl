@@ -33,6 +33,10 @@ function is_connected(p1::Port, p2::Port)
     return p1.node == p2.node && !is_floating(p1)
 end
 
+# same thing, for port-node connection testing
+is_connected(p::Port, n::Node) = p.node == n
+is_connected(n::Node, p::Port) = is_connected(p, n)
+
 # merge the connections of the second node into the first, then disconnect the
 # second node from everything
 function merge!(circ::Circuit, node1::Node, node2::Node)
@@ -181,8 +185,19 @@ function disconnect!(circ::Circuit, p::Port)
         node = p.node
         delete!(node.ports, p)
 
-        # remove the node if it's got no more connections
-        if isempty(node.ports) delete!(circ.nodes, node) end
+        # if the node has less than two connected ports then we should remove it
+        # (by the definition of a node) - an exception is made for the ground node
+        if length(node.ports) < 2 && node != circ.gnd
+
+            # at most one connection may remain - remove on the other end
+            if length(node.ports) == 1
+                port = collect(node.ports)[1]
+                port.node = nothing
+            end
+            
+            # remove the node from the circuit listing
+            delete!(circ.nodes, node)
+        end
         
         # TODO: find a way to make sure p.node's type is consistent
         p.node = nothing
@@ -190,6 +205,10 @@ function disconnect!(circ::Circuit, p::Port)
 end
 
 # this is ambiguous! bad
+# ambiguous because if three ports P1, P2 and P3 are all connected on some node N
+# and disconnect!(P1, P2) is called, it's not possible to have a situation where
+# P1--P3 and P2--P3 but P1-/-P2, so we'd have to disconnect other ports as well which
+# is not intuitive
 # TODO: sort this one out ...
 function disconnect!(circ::Circuit, p1::Port, p2::Port)
     
@@ -202,8 +221,9 @@ function disconnect!(circ::Circuit, p1::Port, p2::Port)
     delete!(node.ports, p1)
     delete!(node.ports, p2)
 
-    # if the node is empty then we should remove it
-    if isempty(node.ports) && !(node == circ.gnd)
+    # if the node has less than two connected ports then we should remove it
+    # (by the definition of a node) - an exception is made for the ground node
+    if length(node.ports) < 2 && node != circ.gnd
         delete!(circ.nodes, node)
     end
 end

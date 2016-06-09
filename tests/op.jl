@@ -1,8 +1,8 @@
 # tests for op.jl - testing operating point stuff
 using SimpleCircuits
 
-# array of test functions
-op_tests = Array{Test, 1}([
+# array of test functions - call me for the array
+op_tests() = Array{Test, 1}([
 
 Test("operating point test 1", function()
     

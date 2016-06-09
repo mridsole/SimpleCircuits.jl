@@ -22,7 +22,7 @@ export show
 include("op.jl")
 export op
 
-# linear analysis
-# include("linear.jl")
+# include tests
+include("tests/tests.jl")
 
 end

@@ -1,23 +1,9 @@
 # tests for connections.jl and related
 using SimpleCircuits
 
-# fixture for creating circuit 1
-macro circuit1()
-    quote
-        # dumps the components into the parent scope
-        $(esc(:circ)) = Circuit()
-        $(esc(:r1)) = Resistor(5e+3)
-        $(esc(:r2)) = Resistor(10e+3)
-        $(esc(:v_DC)) = DCVoltageSource(5.)
-        connect!($(esc(:circ)), $(esc(:v_DC)).pHigh, $(esc(:r1)).p1)
-        connect!($(esc(:circ)), $(esc(:r1)).p2, $(esc(:r2)).p1)
-        connect!($(esc(:circ)), $(esc(:r2)).p2, $(esc(:v_DC)).pLow)
-        connect!($(esc(:circ)), $(esc(:circ)).gnd, $(esc(:v_DC)).pLow)
-    end
-end
-
 # array of test functions - true = passed, error = failure
-connection_tests = Array{Test, 1}([
+# call me for the array
+connection_tests() = Array{Test, 1}([
 
 Test("connection test 1 - construct circuit 1", function()
 
@@ -43,9 +29,6 @@ Test("connection test 1 - construct circuit 1", function()
     @assert !is_connected(r1.p2, r2.p1)
     @assert !is_connected(r2.p2, v_DC.pLow)
     
-    println(typeof(circ))
-    println(typeof(v_DC.pHigh))
-    println(typeof(r1.p1))
     connect!(circ, v_DC.pHigh, r1.p1)
     connect!(circ, r1.p2, r2.p1)
     connect!(circ, r2.p2, v_DC.pLow)
@@ -89,5 +72,37 @@ Test("connection test 4 - test other_end", function()
     @assert r1.p1.node == SimpleCircuits.other_end(r1.p2)
     @assert r2.p2.node == SimpleCircuits.other_end(r2.p1)
     @assert r2.p1.node == SimpleCircuits.other_end(r2.p2)
+end),
+
+Test("connection test 5 - test circuit 2 connections", function()
+    
+    @circuit2
+    
+    # connections that should exist
+    @assert is_connected(v_DC_1.pHigh, r1.p1)
+    @assert is_connected(r1.p2, r2.p1)
+    @assert is_connected(r2.p2, v_DC_1.pLow)
+    @assert is_connected(circ.gnd, r3.p1)
+    @assert is_connected(r3.p2, v_DC_2.pLow)
+    @assert is_connected(v_DC_2.pHigh, r1.p2)
+    @assert is_connected(circ.gnd, v_DC_1.pLow)
+
+    # connections that should not exist
+    @assert !is_connected(v_DC_1.pHigh, v_DC_1.pLow)
+    @assert !is_connected(v_DC_1.pHigh, v_DC_2.pHigh)
+    @assert !is_connected(r3.p2, r1.p2)
+    @assert !is_connected(v_DC_2.pHigh, circ.gnd)
+    @assert !is_connected(v_DC_2.pLow, circ.gnd)
+end),
+
+Test("connection test 6 - test disconnect!", function()
+    
+    @circuit1
+
+    # disconnect some ports in circuit 1
+    disconnect!(circ, r1.p1)
+
+    @assert is_floating(r1.p1)
+    @assert is_floating(v_DC.pHigh)
 end)
 ])
