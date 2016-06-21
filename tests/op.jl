@@ -22,7 +22,25 @@ Test("operating point test 2", function()
 
     # testing a more complicated circuit
     @circuit2
-
     op(circ)
-end)
+end),
+
+# TODO: add numeric assertions in the following tests to ensure validity
+Test("operating point test 3", function()
+
+    @circuit3
+    op(circ)
+end),
+
+Test("operating point test 4", function()
+
+    @circuit4
+    op(circ)
+end),
+
+Test("operating point test 5", function()
+
+    @circuit5
+    op(circ)
+end),
 ])

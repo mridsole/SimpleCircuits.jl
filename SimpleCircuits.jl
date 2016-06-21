@@ -5,7 +5,7 @@ module SimpleCircuits
 
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
 include("components.jl")
-export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource
+export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource
 
 # methods for constructing circuits via connections
 import Base.merge!

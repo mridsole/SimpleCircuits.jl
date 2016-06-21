@@ -7,7 +7,7 @@ type Test
 end
 
 function Base.call(test::Test)
-    
+
     passed = true
     msg = ""
     try
@@ -16,6 +16,7 @@ function Base.call(test::Test)
     catch(err)
         msg = "Test '" * test.name * "' failed: \n" *
         string(err) * "\n"
+        passed = false
     end
 
     return passed, msg

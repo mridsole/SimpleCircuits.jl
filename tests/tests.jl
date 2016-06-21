@@ -28,7 +28,8 @@ function run_all_tests()
     
     for test in tests
         passed, msg = test()
-        println(msg)
+        color = passed ? :green : :red
+        print_with_color(color, msg * "\n")
     end
 end
 
