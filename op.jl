@@ -124,6 +124,19 @@ function op(circ::Circuit)
         # IN through the resistors equal to the current OUT through the sources
         for port in node.ports
 
+            # before any of this - if the component is a two port component, 
+            # AND the other end of the component is not connected, then set the
+            # current through the component to zero
+            if typeof(port.component) <: TwoPortComponent &&
+                is_floating(other_port(port))
+               
+                # the entry in this row of the matrix for this component will be
+                # zero by default - so all we need to do is continue
+                continue
+            end
+
+            # at this point both ends of the component are guarenteed to be connected to something!
+
             # if it's a voltage source - which one is it? use the corresponding current variable
             if typeof(port.component) == DCVoltageSource
                 

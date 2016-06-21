@@ -197,46 +197,36 @@ function node_index(circ::Circuit, node::Node)
     return length(matches) == 0 ? -1 : matches[1]
 end
 
+# most TwoPortComponents follow this convention - exceptions are below ...
+function other_port{T<:TwoPortComponent}(c::T, p::Port)
+    return p == c.p1  ? c.p2 : c.p1
+end
+
+function other_port(c::DCVoltageSource, p::Port)
+    return p == c.pHigh ? c.pLow : c.pHigh
+end
+
+function other_port(c::DCCurrentSource, p::Port)
+    return p == c.pIn ? c.pOut : c.pIn
+end
+    
+# given a port on a two port component, return the port at the other end
+function other_port(port::Port)
+
+    # this only makes sense for two terminal components
+    @assert typeof(port.component) <: TwoPortComponent
+    
+    # multiple dispatch to account for weird port naming ...
+    other_port(port.component, port)
+end
+
 # given a port on a two port component, return the node on the other end
 # if it's floating, return 'nothing' as per normal
 function other_end(port::Port)
     
     if port == nothing return nothing end
-    
-    # this only makes sense for two terminal components
-    @assert typeof(port.component) <: TwoPortComponent
 
-    # a hack for now - really need to do something about this
-    if typeof(port.component) == DCVoltageSource
-        if port == port.component.pHigh
-            if port.component.pLow == nothing return nothing end
-            return port.component.pLow.node
-        else
-            if port.component.pHigh == nothing return nothing end
-            return port.component.pHigh.node
-        end
-    end
-    
-    # and this ...
-    if typeof(port.component) == DCCurrentSource
-        if port == port.component.pOut
-            if port.component.pIn == nothing return nothing end
-            return port.component.pIn.node
-        else
-            if port.component.pOut == nothing return nothing end
-            return port.component.pOut.node
-        end
-    end
-
-    # TODO: there are some two port components defined (the sources) that 
-    # don't follow this convention ... figure out what to do for those.
-    # (should we store the two ports in a pair instead?)
-    if port == port.component.p1
-        if port.component.p2 == nothing return nothing end
-        return port.component.p2.node
-    else
-        if port.component.p1 == nothing return nothing end
-        return port.component.p1.node
-    end
+    # get the other component 
+    # println(port.node)
+    return other_port(port).node
 end
-

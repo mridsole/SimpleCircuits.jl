@@ -41,6 +41,6 @@ end),
 Test("operating point test 5", function()
 
     @circuit5
-    op(circ)
+    op(circ) |> println
 end),
 ])
