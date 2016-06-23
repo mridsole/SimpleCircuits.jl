@@ -37,12 +37,9 @@ end
 
 # find the DC operating point
 function op(circ::Circuit)
-
-    # newton-raphson method here?
-    # solve with a system of linear equations
-    # for non-linear components, solve matrix system
-    # at each step, using the gradients of the 
-    # non-linear components
+    
+    # TODO: figure out how this integrates with Newton-Raphson iteration
+    # for non-linear circuits
 
     # TODO: since for the majority of circuits, the number of 
     # connections on a node is generally much smaller than the 
