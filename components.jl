@@ -11,7 +11,9 @@ type NullComponent <: Component end
 # components also have terminals, or ports
 # i.e. resistors, capacitors, inductors are two terminal components
 # while transistors have three ports
-type Port
+# underscore = internal use (the parameter is used to resolve a 
+# circular type reference - use Port (defined below Node) instead
+type Port_{NodeT}
 
 	# the node it's connected to
 	# setting type to Any is an unfortunately necessary hack, 
@@ -19,35 +21,38 @@ type Port
 	# https://github.com/JuliaLang/julia/issues/269
 	# (on the bright side it lets us represent a floating connection with "nothing")
 	# might be an alternative with parametric types
-	node::Any
-
-	# TODO: investigate accessor function method
-	# i.e use node(p::Port)
+    # UPDATE: better than nothing - just use a parametric type
+	node::NodeT
 
 	# upwards reference to this port's component
 	component::Component
 
-	Port() = new(nothing, NullComponent())
+	Port_() = new(NULL_NODE, NullComponent())
 end
 
 # used to describe which ports are connected
 type Node
 	
 	# list of connected ports
-	ports::Set{Port}
+	ports::Set{Port_{Node}}
 
 	# name of the node
 	name::ASCIIString
 
-	Node() = new(Set{Port}(), "")
-	Node(ports::Set{Port}, name::ASCIIString) = new(ports, name)
-    Node(name::ASCIIString) = new(Set{Port}(), name)
+	Node() = new(Set{Port_{Node}}(), "")
+	Node(ports::Set{Port_{Node}}, name::ASCIIString) = new(ports, name)
+    Node(name::ASCIIString) = new(Set{Port_{Node}}(), name)
 
 	# node must belong to a circuit
 
 	# need to do more than this - check if name is in use
 	# Node(ports::Set{Port}, name::ASCIIString) = new(ports, name)
 end
+
+typealias Port Port_{Node}
+
+# the "null node" - used to specify a floating connection
+global const NULL_NODE = Node(Set{Port}(), "NULL_NODE")
 
 # a Circuit is just a set of nodes (maybe with some other data too?)
 # (describes the connections between components)

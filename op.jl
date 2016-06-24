@@ -1,5 +1,3 @@
-include("components.jl")
-
 # contains the numerical values for a circuit operating point
 type CircuitOP
     

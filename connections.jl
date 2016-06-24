@@ -3,7 +3,10 @@
 # check if a port is floating or not
 # currently this is implemented as port.node == nothing, but this 
 # is messy and will probably change in the future
-is_floating(p::Port) = p.node == nothing
+is_floating(p::Port) = p.node == NULL_NODE
+
+# set a port to floating 
+function set_floating(p::Port) p.node = NULL_NODE end
 
 # is there a ctype component connected to this node?
 function is_type_connected(node::Node, ctype::DataType)
@@ -192,15 +195,14 @@ function disconnect!(circ::Circuit, p::Port)
             # at most one connection may remain - remove on the other end
             if length(node.ports) == 1
                 port = collect(node.ports)[1]
-                port.node = nothing
+                set_floating(port)
             end
             
             # remove the node from the circuit listing
             delete!(circ.nodes, node)
         end
         
-        # TODO: find a way to make sure p.node's type is consistent
-        p.node = nothing
+        set_floating(p)
     end
 end
 
