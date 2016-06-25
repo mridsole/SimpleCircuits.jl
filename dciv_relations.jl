@@ -66,6 +66,36 @@ function dcsatisfy_diff(comp::DCVoltageSource, ps::PortSyms, wrt::Symbol,
     return [eqn1_diff]
 end
 
+# DC IV relation for a current source
+function dciv(comp::DCCurrentSource, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+
+    @assert pIn == comp.pIn || pIn == comp.pOut
+    @assert pIn in keys(ps)
+
+    # obviously for a DC current source we know that the current is just a constant
+    # only thing that matters is direction
+    return pIn == comp.pIn ? comp.I : -comp.I
+end
+
+function dciv_diff(comp::DCCurrentSource, ps::PortSyms, pIn::Port, wrt::Symbol,
+    currentSym::Symbol = :I)
+    
+    # .. no dummy current - the current is constant here
+    return 0.
+end
+
+function dcsatisfy(comp::DCCurrentSource, ps::PortSyms, currentSym::Symbol = :I)
+
+    # no other equations
+    return Expr[]
+end
+
+function dcsatisfy_diff(comp::DCCurrentSource, ps::PortSyms, wrt::Symbol, 
+    currenSym::Symbol)
+
+    return Expr[]
+end
+
 # DC IV relation for a resistor (V = IR)
 function dciv(comp::Resistor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
     
@@ -82,10 +112,10 @@ end
 function dciv_diff(comp::Resistor, ps::PortSyms, pIn::Port, wrt::Symbol, 
     currentSym::Symbol = :I)
     
-    @assert wrt in values(ps) || wrt == currentSymbol
+    @assert wrt in values(ps) || wrt == currentSym
     
     # derivative of (v_pIn - v_pOut) / R w.r.t the given port
-    if wrt == currentSymbol
+    if wrt == currentSym
         return 0.
     else
         if wrt == ps[pIn]
@@ -115,7 +145,7 @@ function dciv(comp::Capacitor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
 end
 
 # (derivative of 0 is 0 ...)
-function dciv_diff(comp::Capacitor, ps::PortSyms, pIn::Port, 
+function dciv_diff(comp::Capacitor, ps::PortSyms, pIn::Port, wrt::Symbol,
     currentSym::Symbol = :I)
 
     return 0.
@@ -128,7 +158,8 @@ function dcsatisfy(comp::Capacitor, ps::PortSyms, currentSym::Symbol = :I)
 end
 
 # ...
-function dcsatisfy_diff(comp::Capacitor, ps::PortSyms, currentSymbol::Symbol = :I)
+function dcsatisfy_diff(comp::Capacitor, ps::PortSyms, wrt::Symbol, 
+    currentSym::Symbol = :I)
     
     return Expr[]
 end
@@ -159,7 +190,8 @@ function dcsatisfy(comp::Inductor, ps::PortSyms, currentSym::Symbol = :I)
 end
 
 # ...
-function dcsatisfy_diff(comp::Inductor, ps::PortSyms, currentSymbol::Symbol = :I)
+function dcsatisfy_diff(comp::Inductor, ps::PortSyms, wrt::Symbol, 
+    currentSym::Symbol = :I)
     
     return Expr[]
 end
