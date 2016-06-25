@@ -103,6 +103,64 @@ function dcsatisfy(comp::Resistor, ps::PortSyms, currentSym::Symbol = :I)
 end
 
 # nothing to do here
-function dcsatisfy_diff(comp::Resistor, ps;:PortSyms, wrt::Symbol, currentSym::Symbol = :I)
+function dcsatisfy_diff(comp::Resistor, ps;:PortSyms, wrt::Symbol, 
+    currentSym::Symbol = :I)
+
+    return Expr[]
+end
+
+# DC IV relation for a capacitor - treat it as an open circuit (current = 0)
+function dciv(comp::Capacitor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+
+    return 0.
+end
+
+# (derivative of 0 is 0 ...)
+function dciv_diff(comp::Capacitor, ps::PortSyms, pIn::Port, 
+    currentSym::Symbol = :I)
+
+    return 0.
+end
+
+# no other DC relations for a capacitor
+function dcsatisfy(comp::Capacitor, ps::PortSyms, currentSym::Symbol = :I)
+
+    return Expr[]
+end
+
+# ...
+function dcsatisfy_diff(comp::Capacitor, ps::PortSyms, currentSymbol::Symbol = :I)
+    
+    return Expr[]
+end
+
+# DC IV relation for an inductor - treat it as a short circuit (voltage across it = 0)
+function dciv(comp::Inductor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+
+    # dummy currents for inductors now go from p1 to p2
+    sgn = pIn == comp.p1 ? 1. : -1.
+    return :($(sgn) * $(currentSym))
+end
+
+function dciv_diff(comp::Inductor, ps::PortSyms, pIn::Port, wrt::Symbol,
+    currentSym::Symbol = :I)
+
+    # very similar to DCVoltageSource
+    if wrt == currentSym
+        return pIn == comp.p1 ? 1. : -1.
+    else
+        return 0.
+    end
+end
+
+# no other DC relations for an inductor
+function dcsatisfy(comp::Inductor, ps::PortSyms, currentSym::Symbol = :I)
+
+    return Expr[]
+end
+
+# ...
+function dcsatisfy_diff(comp::Inductor, ps::PortSyms, currentSymbol::Symbol = :I)
+    
     return Expr[]
 end
