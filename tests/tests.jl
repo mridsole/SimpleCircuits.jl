@@ -11,16 +11,19 @@ include("test_circuits.jl")
 # TODO: turns out Base has some similar features, look into those
 include("test_type.jl")
 
+tests = Test[]
+
 # connection tests
 include("connections.jl")
+append!(tests, connection_tests())
 
 # operating point tests
 include("op.jl")
-
-tests = []
-
-append!(tests, connection_tests())
 append!(tests, op_tests())
+
+# DC IV relation tests
+include("dciv.jl")
+append!(tests, dciv_tests())
 
 function run_all_tests()
 

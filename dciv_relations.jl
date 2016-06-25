@@ -33,7 +33,7 @@ end
 function dciv_diff(comp::DCVoltageSource, ps::PortSyms, pIn::Port, wrt::Symbol, 
     currentSym::Symbol = :I)
     
-    @assert wrt in values(ps) || wrt == currentSymbol
+    @assert wrt in values(ps) || wrt == currentSym
 
     # return the (partial) derivative of the directed current with respect to 
     # the given symbol - in this case, current does not depend on the voltages
@@ -53,12 +53,11 @@ end
 function dcsatisfy_diff(comp::DCVoltageSource, ps::PortSyms, wrt::Symbol, 
     currentSym::Symbol = :I)
     
-    @assert wrt in ps || wrt == currentSym
-    @assert pIn == comp.p1 || pIn == comp.p2
+    @assert wrt in values(ps) || wrt == currentSym
 
     if wrt == ps[comp.pHigh]
         eqn1_diff = 1.
-    elseif wrt == ps[comp.plow]
+    elseif wrt == ps[comp.pLow]
         eqn1_diff = -1.
     elseif wrt == currentSym
         eqn1_diff = 0.
@@ -103,7 +102,7 @@ function dcsatisfy(comp::Resistor, ps::PortSyms, currentSym::Symbol = :I)
 end
 
 # nothing to do here
-function dcsatisfy_diff(comp::Resistor, ps;:PortSyms, wrt::Symbol, 
+function dcsatisfy_diff(comp::Resistor, ps::PortSyms, wrt::Symbol, 
     currentSym::Symbol = :I)
 
     return Expr[]
