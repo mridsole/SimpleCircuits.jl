@@ -14,6 +14,11 @@ include("connections.jl")
 export is_floating, node_name_in_use, is_connected, port_belongs
 export merge!, connect!, disconnect!
 
+# methods for expressions for DC IV (current-voltage) relations
+# of various components
+include("dciv_relations.jl")
+export dciv, dcsatisfy, dciv_diff, dcsatisfy_diff
+
 # display methods
 import Base.show
 include("show.jl")
