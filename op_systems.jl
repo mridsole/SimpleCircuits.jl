@@ -68,6 +68,22 @@ function gen_sys_exprs(circ::Circuit)
         push!(exprs, expr)
     end
 
+    # add in all the other relations to satisfy (each component may have arbitrarily many ..)
+    # (eg there'll be one for each voltage source)
+    for node in circ.nodes
+        for port in node.ports
+            if !is_floating(other_port(port))
+
+                extra_eqns = dcsatisfy(port.component, 
+                    PortSyms(port => nv_symbols[port.node],
+                        other_port(port) => nv_symbols[other_port(port).node]),
+                    get_dum_cur(port.component))
+                
+                append!(exprs, extra_eqns)
+            end
+        end
+    end
+
     # add in one more expression for the ground node voltage (set it to zero)
     push!(exprs, :($(nv_symbols[circ.gnd])))
 
@@ -78,8 +94,9 @@ end
 # place the function in a special sub-module 
 function gen_sys_F(func_label::Symbol, circ::Circuit)
 
-    # ...
-    # testing ...
+    # get the system expressions
+    # sys_exprs = 
+
     n_vars = 3
     nv_exprs = [:(x[1] - x[2] + V), :(x[4]), :(x[5])]
 
