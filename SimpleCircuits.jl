@@ -25,6 +25,10 @@ import Base.show
 include("show.jl")
 export show
 
+# include op systems (expression generation)
+include("op_systems.jl")
+export gen_sys_exprs, gen_sys_F
+
 # operating point analysis
 include("op.jl")
 export op

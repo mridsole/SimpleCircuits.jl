@@ -25,6 +25,10 @@ append!(tests, op_tests())
 include("dciv.jl")
 append!(tests, dciv_tests())
 
+# op system (expression generation) tests
+include("op_systems.jl")
+append!(tests, op_systems_tests())
+
 function run_all_tests()
 
     println("Running all tests ...\n")
