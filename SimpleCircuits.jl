@@ -18,6 +18,7 @@ export merge!, connect!, disconnect!
 # of various components
 include("dciv_relations.jl")
 export dciv, dcsatisfy, dciv_diff, dcsatisfy_diff
+export PortSyms
 
 # display methods
 import Base.show

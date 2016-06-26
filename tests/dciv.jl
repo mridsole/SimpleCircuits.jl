@@ -10,7 +10,7 @@ Test("DCIV test 1 - test DCVoltageSource", function()
     V = 5.
     vdc = DCVoltageSource(V)
 
-    ps = Dict(vdc.pHigh => :v1, vdc.pLow => :v2)
+    ps = PortSyms(vdc.pHigh => :v1, vdc.pLow => :v2)
 
     # expression comparison is quite fragile (we're testing for the 
     # exact same AST, not the same mathematical expresion here)
@@ -33,7 +33,7 @@ Test("DCIV test 2 - test DCCurrentSource", function()
     I = 5.
     idc = DCCurrentSource(I)
 
-    ps = Dict(idc.pIn => :v1, idc.pOut => :v2)
+    ps = PortSyms(idc.pIn => :v1, idc.pOut => :v2)
 
     @assert dciv(idc, ps, idc.pIn, :I1) == I
     @assert dciv(idc, ps, idc.pOut, :I1) == -I
@@ -54,7 +54,7 @@ Test("DCIV test 3 - test Resistor", function()
     R = 5e+3
     r = Resistor(R)
 
-    ps = Dict(r.p1 => :v1, r.p2 => :v2)
+    ps = PortSyms(r.p1 => :v1, r.p2 => :v2)
 
     @assert dciv(r, ps, r.p1, :I1) == :((v1 - v2) / $(R))
     @assert dciv(r, ps, r.p2, :I1) == :((v2 - v1) / $(R))
@@ -76,7 +76,7 @@ Test("DCIV test 4 - test Capacitor", function()
     C = 1e-6
     cap = Capacitor(C)
 
-    ps = Dict(cap.p1 => :v1, cap.p2 => :v2)
+    ps = PortSyms(cap.p1 => :v1, cap.p2 => :v2)
 
     @assert dciv(cap, ps, cap.p1, :I1) == 0.
     @assert dciv(cap, ps, cap.p2, :I1) == 0.
@@ -98,7 +98,7 @@ Test("DCIV test 5 - test Inductor", function()
     L = 1e-6
     ind = Inductor(L)
 
-    ps = Dict(ind.p1 => :v1, ind.p2 => :v2)
+    ps = PortSyms(ind.p1 => :v1, ind.p2 => :v2)
 
     # dummy currents again
     @assert dciv(ind, ps, ind.p1, :I1) == :(1.0 * I1)

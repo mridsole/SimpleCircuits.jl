@@ -15,13 +15,20 @@
 # for building the function for the system of equations for a given circuit,
 # and the corresponding Jacobian matrix function - so it's a bit like a compiler
 
-typealias PortSyms Dict{Port, Symbol}
+typealias PortSyms Dict{Port, Union{Symbol, Expr}}
+
+# specify which components use dummy currents
+uses_dummy_current(comp::DCVoltageSource) = true
+uses_dummy_current(comp::DCCurrentSource) = false
+uses_dummy_current(comp::Resistor) = false
+uses_dummy_current(comp::Capacitor) = false
+uses_dummy_current(comp::Inductor) = true
 
 # IV relations for a voltage source
 # in this case, we don't use most of the interface because all we're returning is the 
 # dummy current - but we could also use this to specify an implicit current relation
 # (like I = exp(I) or something ...)
-function dciv(comp::DCVoltageSource, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+function dciv(comp::DCVoltageSource, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
     
     # return the current symbol, taking into account the direction
     # using the provided in port as a reference
@@ -31,7 +38,7 @@ function dciv(comp::DCVoltageSource, ps::PortSyms, pIn::Port, currentSym::Symbol
 end
 
 function dciv_diff(comp::DCVoltageSource, ps::PortSyms, pIn::Port, wrt::Symbol, 
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
     
     @assert wrt in values(ps) || wrt == currentSym
 
@@ -45,13 +52,13 @@ function dciv_diff(comp::DCVoltageSource, ps::PortSyms, pIn::Port, wrt::Symbol,
 end
 
 # other equations to satisfy for a DC voltage source (equation is expression = 0)
-function dcsatisfy(comp::DCVoltageSource, ps::PortSyms, currentSym::Symbol = :I)
+function dcsatisfy(comp::DCVoltageSource, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
     return [:($(ps[comp.pHigh]) - $(ps[comp.pLow]) - $(comp.V))]
 end
 
 # return the partial derivative of EVERY "other equation" w.r.t the given symbol
 function dcsatisfy_diff(comp::DCVoltageSource, ps::PortSyms, wrt::Symbol, 
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
     
     @assert wrt in values(ps) || wrt == currentSym
 
@@ -67,7 +74,7 @@ function dcsatisfy_diff(comp::DCVoltageSource, ps::PortSyms, wrt::Symbol,
 end
 
 # DC IV relation for a current source
-function dciv(comp::DCCurrentSource, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+function dciv(comp::DCCurrentSource, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
 
     @assert pIn == comp.pIn || pIn == comp.pOut
     @assert pIn in keys(ps)
@@ -78,13 +85,13 @@ function dciv(comp::DCCurrentSource, ps::PortSyms, pIn::Port, currentSym::Symbol
 end
 
 function dciv_diff(comp::DCCurrentSource, ps::PortSyms, pIn::Port, wrt::Symbol,
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
     
     # .. no dummy current - the current is constant here
     return 0.
 end
 
-function dcsatisfy(comp::DCCurrentSource, ps::PortSyms, currentSym::Symbol = :I)
+function dcsatisfy(comp::DCCurrentSource, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
 
     # no other equations
     return Expr[]
@@ -97,7 +104,7 @@ function dcsatisfy_diff(comp::DCCurrentSource, ps::PortSyms, wrt::Symbol,
 end
 
 # DC IV relation for a resistor (V = IR)
-function dciv(comp::Resistor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+function dciv(comp::Resistor, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
     
     # ensure the port belongs to the component
     @assert pIn == comp.p1 || pIn == comp.p2
@@ -110,7 +117,7 @@ function dciv(comp::Resistor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
 end
 
 function dciv_diff(comp::Resistor, ps::PortSyms, pIn::Port, wrt::Symbol, 
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
     
     @assert wrt in values(ps) || wrt == currentSym
     
@@ -127,45 +134,45 @@ function dciv_diff(comp::Resistor, ps::PortSyms, pIn::Port, wrt::Symbol,
 end
 
 # other equations to satisfy for a resistor (none in this case)
-function dcsatisfy(comp::Resistor, ps::PortSyms, currentSym::Symbol = :I)
+function dcsatisfy(comp::Resistor, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
     return Expr[]
 end
 
 # nothing to do here
 function dcsatisfy_diff(comp::Resistor, ps::PortSyms, wrt::Symbol, 
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
 
     return Expr[]
 end
 
 # DC IV relation for a capacitor - treat it as an open circuit (current = 0)
-function dciv(comp::Capacitor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+function dciv(comp::Capacitor, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
 
     return 0.
 end
 
 # (derivative of 0 is 0 ...)
 function dciv_diff(comp::Capacitor, ps::PortSyms, pIn::Port, wrt::Symbol,
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
 
     return 0.
 end
 
 # no other DC relations for a capacitor
-function dcsatisfy(comp::Capacitor, ps::PortSyms, currentSym::Symbol = :I)
+function dcsatisfy(comp::Capacitor, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
 
     return Expr[]
 end
 
 # ...
 function dcsatisfy_diff(comp::Capacitor, ps::PortSyms, wrt::Symbol, 
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
     
     return Expr[]
 end
 
 # DC IV relation for an inductor - treat it as a short circuit (voltage across it = 0)
-function dciv(comp::Inductor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
+function dciv(comp::Inductor, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
 
     # dummy currents for inductors now go from p1 to p2
     sgn = pIn == comp.p1 ? 1. : -1.
@@ -173,7 +180,7 @@ function dciv(comp::Inductor, ps::PortSyms, pIn::Port, currentSym::Symbol = :I)
 end
 
 function dciv_diff(comp::Inductor, ps::PortSyms, pIn::Port, wrt::Symbol,
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
 
     # very similar to DCVoltageSource
     if wrt == currentSym
@@ -184,14 +191,14 @@ function dciv_diff(comp::Inductor, ps::PortSyms, pIn::Port, wrt::Symbol,
 end
 
 # no other DC relations for an inductor
-function dcsatisfy(comp::Inductor, ps::PortSyms, currentSym::Symbol = :I)
+function dcsatisfy(comp::Inductor, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
 
     return Expr[]
 end
 
 # ...
 function dcsatisfy_diff(comp::Inductor, ps::PortSyms, wrt::Symbol, 
-    currentSym::Symbol = :I)
+    currentSym::Union{Symbol, Expr} = :I)
     
     return Expr[]
 end
