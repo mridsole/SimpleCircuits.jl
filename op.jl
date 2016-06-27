@@ -45,9 +45,6 @@ function op(circ::Circuit)
     # (which is the number of equations we will have) - therefore
     # the linear system tends to be sparse
     # figure out a way to exploit this
-    
-    # we should return a map from nodes to voltages
-    dict = Dict{Node, Float64}()
 
     # now we need to construct the matrix of equations
     # one equation for each node

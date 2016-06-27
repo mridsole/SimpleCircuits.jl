@@ -177,6 +177,15 @@ type DCCurrentSource <: TwoPortComponent
     end
 end
 
+# the default
+p1(comp::Component) = comp.p1
+p1(comp::DCVoltageSource) = comp.pLow
+p1(comp::DCCurrentSource) = comp.pIn
+
+p2(comp::Component) = comp.p2
+p2(comp::DCVoltageSource) = comp.pHigh
+p2(comp::DCCurrentSource) = comp.pOut
+
 # obtain the name of a component type
 function component_type_name(c)
 	
