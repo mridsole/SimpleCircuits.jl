@@ -73,33 +73,32 @@ Test("op system test 6 - gen_sys_F circuit1", function()
     gen_sys_F(:c1_F, sym_map, circ)
 end),
 
-Test("op system test 7 - gen_sys_F circuit1", function()
+Test("op system test 7 - gen_sys_F circuit2", function()
     
-    @circuit1
+    @circuit2
     sym_map = gen_sym_map(circ)
     gen_sys_F(:c1_F, sym_map, circ)
 end),
 
-Test("op system test 8 - gen_sys_F circuit1", function()
+Test("op system test 8 - gen_sys_F circuit3", function()
     
-    @circuit1
+    @circuit3
     sym_map = gen_sym_map(circ)
     gen_sys_F(:c1_F, sym_map, circ)
 end),
 
-Test("op system test 9 - gen_sys_F circuit1", function()
+Test("op system test 9 - gen_sys_F circuit4", function()
     
-    @circuit1
+    @circuit4
     sym_map = gen_sym_map(circ)
     gen_sys_F(:c1_F, sym_map, circ)
 end),
 
-Test("op system test 10 - gen_sys_F circuit1", function()
+Test("op system test 10 - gen_sys_F circuit5", function()
     
-    @circuit1
+    @circuit5
     sym_map = gen_sym_map(circ)
     gen_sys_F(:c1_F, sym_map, circ)
-end),
-
+end)
 
 ])
