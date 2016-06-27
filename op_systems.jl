@@ -69,7 +69,7 @@ end
 
 # generate the expressions for the system of equations for a circuit
 # (used in gen_sys_F)
-function gen_sys_exprs(circ::Circuit)
+function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
 
     nodes_vec = collect(circ.nodes)
     n_nodes = length(nodes_vec)
@@ -99,8 +99,6 @@ function gen_sys_exprs(circ::Circuit)
     for i = 1:n_dummy_currents
         dummy_current_symbols[dummy_current_components[i]] = :(x[$(i + n_nodes)])
     end
-
-    sym_map = gen_sym_map(circ)
 
     function get_dum_cur(comp::Component)
         if comp in keys(sym_map)
@@ -166,12 +164,12 @@ end
 
 # generate the function describing the system of equations: F = 0
 # place the function in a special sub-module 
-function gen_sys_F(func_label::Symbol, circ::Circuit)
+function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
 
     # get the system expressions
     # sys_exprs = 
-
-    nv_exprs = gen_sys_exprs(circ)
+    
+    nv_exprs = gen_sys_exprs(sym_map, circ)
     n_exprs = length(nv_exprs)
 
     func_expr = quote
