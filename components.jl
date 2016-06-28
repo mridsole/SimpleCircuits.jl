@@ -1,5 +1,8 @@
 # this contains type definitions for some circuit components
 
+# used for storing ports connected to a node
+using DataStructures
+
 # supertype of all circuit components
 abstract Component
 abstract TwoPortComponent <: Component
@@ -34,14 +37,14 @@ end
 type Node
 	
 	# list of connected ports
-	ports::Set{Port_{Node}}
+	ports::OrderedSet{Port_{Node}}
 
 	# name of the node
 	name::ASCIIString
 
-	Node() = new(Set{Port_{Node}}(), "")
-	Node(ports::Set{Port_{Node}}, name::ASCIIString) = new(ports, name)
-    Node(name::ASCIIString) = new(Set{Port_{Node}}(), name)
+	Node() = new(OrderedSet{Port_{Node}}(), "")
+	Node(ports::OrderedSet{Port_{Node}}, name::ASCIIString) = new(ports, name)
+    Node(name::ASCIIString) = new(OrderedSet{Port_{Node}}(), name)
 
 	# node must belong to a circuit
 
@@ -52,13 +55,13 @@ end
 typealias Port Port_{Node}
 
 # the "null node" - used to specify a floating connection
-global const NULL_NODE = Node(Set{Port}(), "NULL_NODE")
+global const NULL_NODE = Node(OrderedSet{Port}(), "NULL_NODE")
 
 # a Circuit is just a set of nodes (maybe with some other data too?)
 # (describes the connections between components)
 type Circuit
 
-	nodes::Set{Node}
+	nodes::OrderedSet{Node}
 	
 	# how many "unnamed" (automatically named) nodes do we have?
 	autonamed_nodes::Int64
@@ -68,7 +71,7 @@ type Circuit
 	
 	# construct empty circuit
     function Circuit() 
-        this = new(Set{Node}(), 0, Node("GND"))
+        this = new(OrderedSet{Node}(), 0, Node("GND"))
         push!(this.nodes, this.gnd)
         return this
     end

@@ -67,7 +67,7 @@ function connect!(circ::Circuit, p1::Port, p2::Port, name::ASCIIString="")
 		# CASE 1: both p1 and p2 aren't connected to anything (node == nothing)
 
 		# so make a new node:
-		new_node = Node(Set{Port}([p1, p2]), name)
+		new_node = Node(OrderedSet{Port}([p1, p2]), name)
 
 		if name == ""
 			# give the node an automatic name if necessary

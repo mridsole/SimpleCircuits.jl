@@ -3,6 +3,10 @@
 
 module SimpleCircuits
 
+# multidimensional newton-raphson iteration
+include("newton.jl")
+export newton
+
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
 include("components.jl")
 export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource

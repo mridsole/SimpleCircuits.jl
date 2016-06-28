@@ -183,6 +183,8 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
                 push!(ex.args, :(nv[$(i)] = $(nv_exprs[i])))
             end;
             ex )
+
+            return nv
         end
     end
 
@@ -205,6 +207,15 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
     n_nodes = length(circ.nodes)
     nodes_sym_pairs = sym_map_pairs[1:n_nodes]
 
+    # wrapper around sym_map for dummy currents
+    function get_dum_cur(comp::Component)
+        if comp in keys(sym_map)
+            return sym_map[comp]
+        else # (if there's no dummy current for this component it doesn't matter)
+            return :_
+        end
+    end
+
     # now the equation ordering is: all the node equations, THEN all the
     # extra relations from each component, in the order specified by 
     # the sym_map OrderedDict
@@ -223,9 +234,10 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
             if node == circ.gnd
                 j_ = 1
                 for (_, sym_) in sym_map_pairs
-                    expr_m[i, j] = sym_ == sym_map[circ.gnd] ? 1. : 0.
+                    expr_m[i, j_] = sym_ == sym_map[circ.gnd] ? 1. : 0.
                     j_ += 1
                 end
+                continue
             end
 
             for port in node.ports
@@ -239,8 +251,34 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
                 )
 
                 expr_m[i, j] = :($(expr_m[i, j]) + $(dciv_diff(port.component,
-                    ps, port, sym_map_pairs[j].second))
+                    ps, port, sym_map_pairs[j].second, get_dum_cur(port.component)))
                 )
+            end
+        end
+    end
+
+    # now fill in the remaining equations (using dcsatisfy_diff)
+    comps_ordered = get_components_ordered(sym_map)
+    i = n_nodes + 1   # which equation we're at
+    for comp in comps_ordered
+
+        # if either port floating, the corresponding equation is 0
+        # (currently - this isn't actually correct! TODO)
+        if is_floating(p1(comp)) || is_floating(p2(comp))
+            continue
+        end
+
+        ps = PortSyms(p1(comp) => sym_map[p1(comp).node],
+        p2(comp) => sym_map[p2(comp).node])
+        
+        # differentiate w.r.t. each variable
+        for j = 1:n_exprs
+
+            diff_eqns = dcsatisfy_diff(comp, ps, sym_map_pairs[j].second,
+                get_dum_cur(comp))
+            
+            for k = 1:length(diff_eqns)
+                expr_m[i + k - 1, j] = :($(expr_m[i + k - 1, j]) + $(diff_eqns[k]))
             end
         end
     end
@@ -251,5 +289,26 @@ end
 # generate the function returning the Jacobian of the above system
 function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     
-    
+    # generate a function that computes the jacobian based on generated exprs
+    # (and given a mapping from nodes/comps to voltage/dummy current symbols)
+
+    # get the expressions
+    exprs = gen_J_exprs(sym_map, circ)
+
+    # make the function
+    func_expr = quote
+        function ($(function_label))(x::Vector{Float64}, J::Matrix{Float64})
+            
+            $(expr = quote end;
+            for i in eachindex(exprs)
+                push!(expr.args, :(J[$(i)] = $(exprs[i])))
+            end;
+            expr)
+
+            return J
+        end
+    end
+
+    # place the function in the Generated submodule
+    Generated.eval(func_expr)
 end
