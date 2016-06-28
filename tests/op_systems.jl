@@ -99,6 +99,17 @@ Test("op system test 10 - gen_sys_F circuit5", function()
     @circuit5
     sym_map = gen_sym_map(circ)
     gen_sys_F(:c1_F, sym_map, circ)
-end)
+end),
+
+Test("op system test 11 - gen_J_exprs circuit1", function()
+    
+    @circuit1
+    sym_map = gen_sym_map(circ)
+    exprs = gen_J_exprs(sym_map, circ)
+
+    println("size: " * string(size(exprs)))
+
+    for expr in exprs println(expr) end
+end),
 
 ])

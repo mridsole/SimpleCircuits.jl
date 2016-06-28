@@ -37,10 +37,8 @@ function dciv(comp::DCVoltageSource, ps::PortSyms, pIn::Port, currentSym::Union{
     return :($(sgn) * $(currentSym))
 end
 
-function dciv_diff(comp::DCVoltageSource, ps::PortSyms, pIn::Port, wrt::Symbol, 
+function dciv_diff(comp::DCVoltageSource, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
-    
-    @assert wrt in values(ps) || wrt == currentSym
 
     # return the (partial) derivative of the directed current with respect to 
     # the given symbol - in this case, current does not depend on the voltages
@@ -57,16 +55,16 @@ function dcsatisfy(comp::DCVoltageSource, ps::PortSyms, currentSym::Union{Symbol
 end
 
 # return the partial derivative of EVERY "other equation" w.r.t the given symbol
-function dcsatisfy_diff(comp::DCVoltageSource, ps::PortSyms, wrt::Symbol, 
+function dcsatisfy_diff(comp::DCVoltageSource, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
-    
-    @assert wrt in values(ps) || wrt == currentSym
 
     if wrt == ps[comp.pHigh]
         eqn1_diff = 1.
     elseif wrt == ps[comp.pLow]
         eqn1_diff = -1.
     elseif wrt == currentSym
+        eqn1_diff = 0.
+    else
         eqn1_diff = 0.
     end
     
@@ -84,7 +82,7 @@ function dciv(comp::DCCurrentSource, ps::PortSyms, pIn::Port, currentSym::Union{
     return pIn == comp.pIn ? comp.I : -comp.I
 end
 
-function dciv_diff(comp::DCCurrentSource, ps::PortSyms, pIn::Port, wrt::Symbol,
+function dciv_diff(comp::DCCurrentSource, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
     currentSym::Union{Symbol, Expr} = :I)
     
     # .. no dummy current - the current is constant here
@@ -97,7 +95,7 @@ function dcsatisfy(comp::DCCurrentSource, ps::PortSyms, currentSym::Union{Symbol
     return Expr[]
 end
 
-function dcsatisfy_diff(comp::DCCurrentSource, ps::PortSyms, wrt::Symbol, 
+function dcsatisfy_diff(comp::DCCurrentSource, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currenSym::Symbol)
 
     return Expr[]
@@ -116,10 +114,8 @@ function dciv(comp::Resistor, ps::PortSyms, pIn::Port, currentSym::Union{Symbol,
     return :(($(ps[pIn]) - $(ps[other_port(pIn)])) / $(comp.R))
 end
 
-function dciv_diff(comp::Resistor, ps::PortSyms, pIn::Port, wrt::Symbol, 
+function dciv_diff(comp::Resistor, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
-    
-    @assert wrt in values(ps) || wrt == currentSym
     
     # derivative of (v_pIn - v_pOut) / R w.r.t the given port
     if wrt == currentSym
@@ -127,8 +123,10 @@ function dciv_diff(comp::Resistor, ps::PortSyms, pIn::Port, wrt::Symbol,
     else
         if wrt == ps[pIn]
             return :(1 / $(comp.R))
-        else
+        elseif wrt == ps[other_port(pIn)]
             return :(-1 / $(comp.R))
+        else
+            return 0.
         end
     end
 end
@@ -139,7 +137,7 @@ function dcsatisfy(comp::Resistor, ps::PortSyms, currentSym::Union{Symbol, Expr}
 end
 
 # nothing to do here
-function dcsatisfy_diff(comp::Resistor, ps::PortSyms, wrt::Symbol, 
+function dcsatisfy_diff(comp::Resistor, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
 
     return Expr[]
@@ -152,7 +150,7 @@ function dciv(comp::Capacitor, ps::PortSyms, pIn::Port, currentSym::Union{Symbol
 end
 
 # (derivative of 0 is 0 ...)
-function dciv_diff(comp::Capacitor, ps::PortSyms, pIn::Port, wrt::Symbol,
+function dciv_diff(comp::Capacitor, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
     currentSym::Union{Symbol, Expr} = :I)
 
     return 0.
@@ -165,7 +163,7 @@ function dcsatisfy(comp::Capacitor, ps::PortSyms, currentSym::Union{Symbol, Expr
 end
 
 # ...
-function dcsatisfy_diff(comp::Capacitor, ps::PortSyms, wrt::Symbol, 
+function dcsatisfy_diff(comp::Capacitor, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
     
     return Expr[]
@@ -179,7 +177,7 @@ function dciv(comp::Inductor, ps::PortSyms, pIn::Port, currentSym::Union{Symbol,
     return :($(sgn) * $(currentSym))
 end
 
-function dciv_diff(comp::Inductor, ps::PortSyms, pIn::Port, wrt::Symbol,
+function dciv_diff(comp::Inductor, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
     currentSym::Union{Symbol, Expr} = :I)
 
     # very similar to DCVoltageSource
@@ -197,7 +195,7 @@ function dcsatisfy(comp::Inductor, ps::PortSyms, currentSym::Union{Symbol, Expr}
 end
 
 # ...
-function dcsatisfy_diff(comp::Inductor, ps::PortSyms, wrt::Symbol, 
+function dcsatisfy_diff(comp::Inductor, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
     
     return Expr[]

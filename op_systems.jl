@@ -188,3 +188,68 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
 
     Generated.eval(func_expr)
 end
+
+# generate the matrix of expressions representing the jacobian
+function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
+    
+    # number of equations we have (= number of variables)
+    n_exprs = length(sym_map)
+
+    # the expression matrix - the ordering is how it usually is for a Jacobian:
+    # (expr_m)_{i, j} = ∂F_i/∂x_j
+    expr_m = zeros(Float64, (n_exprs, n_exprs)) |> Array{Any, 2}
+
+    sym_map_pairs = collect(sym_map)
+
+    # get just the ordered nodes
+    n_nodes = length(circ.nodes)
+    nodes_sym_pairs = sym_map_pairs[1:n_nodes]
+
+    # now the equation ordering is: all the node equations, THEN all the
+    # extra relations from each component, in the order specified by 
+    # the sym_map OrderedDict
+    # so the Jacobian must follow this order (and obviously use the variable
+    # ordering specified by the order of the keys of sym_map)
+    
+    # fill it in - first, do the derivatives of the node current equations
+    # (so the first n_node rows of the matrix)
+    for i = 1:n_nodes
+        for j = 1:n_exprs
+
+            (node, sym) = nodes_sym_pairs[i]
+
+            # if this is the ground node, then zeros in every column EXCEPT 
+            # for the ground voltage symbol column, where there's a 1
+            if node == circ.gnd
+                j_ = 1
+                for (_, sym_) in sym_map_pairs
+                    expr_m[i, j] = sym_ == sym_map[circ.gnd] ? 1. : 0.
+                    j_ += 1
+                end
+            end
+
+            for port in node.ports
+
+                # if other port floating, continue
+                if is_floating(other_port(port)) continue end
+
+                # for each connected component add the derivative expression
+                ps = PortSyms(port => sym_map[port.node],
+                    other_port(port) => sym_map[other_port(port).node]
+                )
+
+                expr_m[i, j] = :($(expr_m[i, j]) + $(dciv_diff(port.component,
+                    ps, port, sym_map_pairs[j].second))
+                )
+            end
+        end
+    end
+
+    return expr_m
+end
+
+# generate the function returning the Jacobian of the above system
+function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
+    
+    
+end
