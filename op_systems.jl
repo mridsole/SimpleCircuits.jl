@@ -258,28 +258,68 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
     end
 
     # now fill in the remaining equations (using dcsatisfy_diff)
+#    comps_ordered = get_components_ordered(sym_map)
+#    i = n_nodes + 1   # which equation we're at
+#    for comp in comps_ordered
+#
+#        # if either port floating, the corresponding equation is 0
+#        # (currently - this isn't actually correct! TODO)
+#        if is_floating(p1(comp)) || is_floating(p2(comp))
+#            continue
+#        end
+#
+#        ps = PortSyms(p1(comp) => sym_map[p1(comp).node],
+#        p2(comp) => sym_map[p2(comp).node])
+#
+#        # each component has a number of extra equations that must be satisfied
+#        # for each one of these, get derivative w.r.t. each variable
+#        
+#        
+#        # differentiate w.r.t. each variable
+#        for j = 1:n_exprs
+#
+#            # well this is obviously broken
+#            diff_eqns = dcsatisfy_diff(comp, ps, sym_map_pairs[j].second,
+#                get_dum_cur(comp))
+#            
+#            for k = 1:length(diff_eqns)
+#                expr_m[i + k - 1, j] = :($(expr_m[i + k - 1, j]) + $(diff_eqns[k]))
+#            end
+#
+#            println(length(diff_eqns))
+#            i += length(diff_eqns)
+#        end
+#    end
+
     comps_ordered = get_components_ordered(sym_map)
-    i = n_nodes + 1   # which equation we're at
-    for comp in comps_ordered
 
-        # if either port floating, the corresponding equation is 0
-        # (currently - this isn't actually correct! TODO)
-        if is_floating(p1(comp)) || is_floating(p2(comp))
-            continue
-        end
-
-        ps = PortSyms(p1(comp) => sym_map[p1(comp).node],
-        p2(comp) => sym_map[p2(comp).node])
+    # for each variable, differentiate each equation of each component
+    # (so we're working columnwise in the Jacobian) - for each column:
+    for var_idx in 1:n_exprs
         
-        # differentiate w.r.t. each variable
-        for j = 1:n_exprs
+        # move back to the first not-node equation
+        i = n_nodes + 1
 
-            diff_eqns = dcsatisfy_diff(comp, ps, sym_map_pairs[j].second,
+        for comp in comps_ordered
+            
+            # if either port floating, the corresponding equation is 0
+            # (currently - this isn't actually correct! TODO)
+            if is_floating(p1(comp)) || is_floating(p2(comp))
+                continue
+            end
+
+            ps = PortSyms(p1(comp) => sym_map[p1(comp).node],
+            p2(comp) => sym_map[p2(comp).node])
+
+            diff_eqns = dcsatisfy_diff(comp, ps, sym_map_pairs[var_idx].second,
                 get_dum_cur(comp))
             
             for k = 1:length(diff_eqns)
-                expr_m[i + k - 1, j] = :($(expr_m[i + k - 1, j]) + $(diff_eqns[k]))
+                expr_m[i + k - 1, var_idx] = :($(expr_m[i + k - 1, var_idx])
+                    + $(diff_eqns[k]))
             end
+
+            i += length(diff_eqns)
         end
     end
 
