@@ -85,3 +85,18 @@ macro circuit5()
         connect!(circ, circ.gnd, v_DC.pLow)
     end)
 end
+
+# simple non-linear circuit with a diode
+macro circuit6()
+
+    esc(quote
+        circ = Circuit()
+        r1 = Resistor(50.)
+        d1 = Diode(1e-11, 0.026, 1.)
+        v_DC = DCVoltageSource(5.)
+        connect!(circ, r1.p1, v_DC.pHigh)
+        connect!(circ, r1.p2, p1(d1))
+        connect!(circ, p2(d1), v_DC.pLow)
+        connect!(circ, v_DC.pLow, circ.gnd)
+    end)
+end

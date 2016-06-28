@@ -117,6 +117,24 @@ Test("DCIV test 5 - test Inductor", function()
     @assert dcsatisfy_diff(ind, ps, :v1, :I1) == Expr[]
     @assert dcsatisfy_diff(ind, ps, :v2, :I1) == Expr[]
     @assert dcsatisfy_diff(ind, ps, :I1, :I1) == Expr[]
+end),
+
+Test("DCIV test 6 - test Diode", function()
+    
+    # reverse saturation current
+    Is = 1e-14
+
+    # thermal voltage at room temperature
+    VT = 0.026
+
+    # ideality factor
+    n = 1.
+
+    d1 = Diode(Is, VT, n)
+
+    ps = PortSyms(p1(d1) => :v1, p2(d1) => :v2)
+
+    println(dciv(d1, ps, p1(d1), :I1))
 end)
 
 ])

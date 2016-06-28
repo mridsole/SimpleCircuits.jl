@@ -23,6 +23,7 @@ uses_dummy_current(comp::DCCurrentSource) = false
 uses_dummy_current(comp::Resistor) = false
 uses_dummy_current(comp::Capacitor) = false
 uses_dummy_current(comp::Inductor) = true
+uses_dummy_current(comp::Diode) = false
 
 # IV relations for a voltage source
 # in this case, we don't use most of the interface because all we're returning is the 
@@ -198,5 +199,45 @@ end
 function dcsatisfy_diff(comp::Inductor, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
     
+    return Expr[]
+end
+
+# relations for a diode
+function dciv(comp::Diode, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
+
+    v1 = ps[p1(comp)]
+    v2 = ps[p2(comp)]
+    sgn = pIn == p1(comp) ? 1. : -1.
+
+    expr = :($(sgn) * $(comp.Is) * (exp(($(v1) - $(v2))
+        / ($(comp.n * comp.VT))) - 1.))
+
+    return expr
+end
+
+function dciv_diff(comp::Diode, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :I)
+
+    v1 = ps[p1(comp)]
+    v2 = ps[p2(comp)]
+    sgn = pIn == p1(comp) ? 1. : -1.
+    sgn *= wrt == v1 ? 1. : -1.
+
+    if wrt != v1 && wrt != v2 return 0. end
+
+    expr = :(($(sgn) / ($(comp.n * comp.VT))) * $(comp.Is) * 
+        exp(($(v1) - $(v2)) / $(comp.n * comp.VT)))
+
+    return expr
+end
+
+function dcsatisfy(comp::Diode, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
+
+    return Expr[]
+end
+
+function dcsatisfy_diff(comp::Diode, ps::PortSyms, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :I)
+
     return Expr[]
 end

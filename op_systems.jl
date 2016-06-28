@@ -350,5 +350,7 @@ function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     end
 
     # place the function in the Generated submodule
+    # this is a bit of a hack - but apparently anonymous functions 
+    # aren't very fast (FastAnonymous.jl ??)
     Generated.eval(func_expr)
 end

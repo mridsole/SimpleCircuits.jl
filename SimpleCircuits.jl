@@ -10,6 +10,7 @@ export newton
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
 include("components.jl")
 export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource
+export Diode, p1, p2
 export TwoPortComponent
 
 # methods for constructing circuits via connections
@@ -34,6 +35,7 @@ include("op_systems.jl")
 export gen_sym_map, gen_sys_exprs, gen_sys_F, gen_J_exprs, gen_sys_J
 
 # operating point analysis
+# TODO: this is the old, linear only implementation - name this appropriately
 include("op.jl")
 export op
 

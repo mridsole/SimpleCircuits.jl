@@ -70,6 +70,18 @@ Test("op system test 5 - gen_sys_exprs circuit5", function()
     end
 end),
 
+Test("op system test 6 - gen_sys_exprs circuit6", function()
+
+    @circuit6
+    sym_map = gen_sym_map(circ)
+    exprs = gen_sys_exprs(sym_map, circ)
+
+    if print_exprs
+        println("Circuit 6 generated expressions (= 0): ")
+        for expr in exprs println(expr) end
+    end
+end),
+
 Test("op system test 6 - gen_sys_F circuit1", function()
     
     @circuit1
@@ -272,6 +284,27 @@ Test("op system test 20 - gen_sys_J circuit5", function()
     
     if print_op
         println("Circuit 5 operating point: ")
+        println(newton(F, J, x0))
+    end
+end),
+
+Test("op system test 22 - gen_sys_J circuit6", function()
+
+    @circuit6
+    
+    sym_map = gen_sym_map(circ)
+
+    # (this should already exist)
+    gen_sys_F(:c1_F, sym_map, circ)
+    gen_sys_J(:c1_J, sym_map, circ)
+
+    F = SimpleCircuits.Generated.c1_F
+    J = SimpleCircuits.Generated.c1_J
+
+    x0 = zeros(length(sym_map))
+    
+    if print_op
+        println("Circuit 6 operating point: ")
         println(newton(F, J, x0))
     end
 end)

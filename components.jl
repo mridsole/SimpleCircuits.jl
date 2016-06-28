@@ -180,14 +180,42 @@ type DCCurrentSource <: TwoPortComponent
     end
 end
 
+type Diode <: TwoPortComponent
+
+    name::ASCIIString
+
+    # reverse saturation current
+    Is::Float64
+
+    # thermal voltage (0.026 V at 25 degrees C)
+    VT::Float64
+
+    # ideality factor (between 1 and 2)
+    n::Float64
+
+    pIn::Port
+    pOut::Port
+
+    # common "mistake" looks to be passing an integer as n ..
+    # so don't type annotate that
+    function Diode(Is::Float64, VT::Float64, n = 1.)
+        this = new("", Is, VT, n, Port(), Port())
+        this.pIn.component = this
+        this.pOut.component = this
+        return this
+    end
+end
+
 # the default
 p1(comp::Component) = comp.p1
 p1(comp::DCVoltageSource) = comp.pLow
 p1(comp::DCCurrentSource) = comp.pIn
+p1(comp::Diode) = comp.pIn
 
 p2(comp::Component) = comp.p2
 p2(comp::DCVoltageSource) = comp.pHigh
 p2(comp::DCCurrentSource) = comp.pOut
+p2(comp::Diode) = comp.pOut
 
 # obtain the name of a component type
 function component_type_name(c)
@@ -226,6 +254,10 @@ end
 function other_port(c::DCCurrentSource, p::Port)
     return p == c.pIn ? c.pOut : c.pIn
 end
+
+function other_port(d::Diode, p::Port)
+    return p == d.pIn ? d.pOut : d.pIn
+end
     
 # given a port on a two port component, return the port at the other end
 function other_port(port::Port)
@@ -244,6 +276,5 @@ function other_end(port::Port)
     if port == nothing return nothing end
 
     # get the other component 
-    # println(port.node)
     return other_port(port).node
 end
