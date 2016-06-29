@@ -118,3 +118,21 @@ macro circuit7()
         connect!(circ, p1(d2), v_DC.pLow)
     end)
 end
+
+# simple NPN BJT circuit
+macro circuit8()
+    
+    esc(quote
+        circ = Circuit()
+        rc = Resistor(1e+3)
+        rb = Resistor(100.)
+        vcc = DCVoltageSource(10.)
+        q1 = NPN()
+        connect!(circ, circ.gnd, vcc.pLow)
+        connect!(circ, vcc.pHigh, rc.p1)
+        connect!(circ, rc.p2, rb.p1, "Vout")
+        connect!(circ, rc.p2, q1.pC)
+        connect!(circ, rb.p2, q1.pB)
+        connect!(circ, circ.gnd, q1.pE)
+    end)
+end

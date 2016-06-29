@@ -221,7 +221,7 @@ function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
     # symbol map
     sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
 
-    x = op_raw(circ, sym_map, F, J, x0, params)
+    x = op_raw(circ, sym_map=sym_map, F=F, J=J, x0=x0, params=params)
 
     cop = CircuitOP{Float64}()
 

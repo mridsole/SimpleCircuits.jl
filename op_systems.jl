@@ -151,14 +151,21 @@ function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
 
             # if either port on the component is floating, set current to zero
             # (same as doing nothing ... since we sum currents)
-            if is_floating(other_port(port))
+            if typeof(port.component) <: TwoPortComponent && is_floating(other_port(port))
                 continue
             end
 
-            expr = :($(expr) + $(dciv(port.component, PortSyms(port => sym, 
-            other_port(port) => sym_map[other_port(port).node]),
-                port, get_dum_cur(port.component)))
-            )
+            # ... if a port is floating on a component with more than two ports ...
+            # what is the condition?
+
+            # generate the port symbol map
+            ps = PortSyms()
+            for p in ports(port.component)
+                ps[p] = sym_map[p.node]
+            end
+
+            expr = :($(expr) + $(dciv(port.component, ps, port, 
+                get_dum_cur(port.component))))
         end
 
         push!(exprs, expr)
@@ -285,12 +292,14 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
             for port in node.ports
 
                 # if other port floating, continue
-                if is_floating(other_port(port)) continue end
+                if typeof(port.component) <: TwoPortComponent && 
+                    is_floating(other_port(port)) continue end
 
                 # for each connected component add the derivative expression
-                ps = PortSyms(port => sym_map[port.node],
-                    other_port(port) => sym_map[other_port(port).node]
-                )
+                ps = PortSyms()
+                for p in ports(port.component)
+                    ps[p] = sym_map[p.node]
+                end
 
                 expr_m[i, j] = :($(expr_m[i, j]) + $(dciv_diff(port.component,
                     ps, port, sym_map_pairs[j].second, get_dum_cur(port.component)))
@@ -356,6 +365,7 @@ function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
             $( ex = quote end;
             for param in params
                 # send help
+                push!(println("a"))
                 push!(ex.args, :($(symbol(param)) = param_vals[$(Meta.quot(param))]))
             end;
             ex )

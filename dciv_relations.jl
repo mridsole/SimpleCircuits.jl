@@ -24,6 +24,7 @@ uses_dummy_current(comp::Resistor) = false
 uses_dummy_current(comp::Capacitor) = false
 uses_dummy_current(comp::Inductor) = true
 uses_dummy_current(comp::Diode) = false
+uses_dummy_current(comp::NPN) = false
 
 # IV relations for a voltage source
 # in this case, we don't use most of the interface because all we're returning is the 
@@ -280,6 +281,99 @@ function dcsatisfy(comp::Diode, ps::PortSyms, currentSym::Union{Symbol, Expr} = 
 end
 
 function dcsatisfy_diff(comp::Diode, ps::PortSyms, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :I)
+
+    return Expr[]
+end
+
+# DCIV relations for an NPN bipolar junction transistor
+function dciv(comp::NPN, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :_I)
+    
+    # port map: p1 is C, p2 is B, p3 is E
+    vC = ps[p1(comp)]
+    vB = ps[p2(comp)]
+    vE = ps[p3(comp)]
+
+    αf = :(($(comp.βf) / ($(comp.βf) + 1)))
+    αr = :(($(comp.βr) / ($(comp.βr) + 1)))
+
+    # some more useful building blocks
+    expbe = :((exp(($(vB)-$(vE))/$(comp.VT))-1.))
+    expbc = :((exp(($(vB)-$(vC))/$(comp.VT))-1.))
+
+    # use the Ebers-Moll model
+    if pIn == p1(comp)      # collector
+        expr = :($(comp.Is) * ($(αf) * $(expbe) - $(expbc)))
+    elseif pIn == p2(comp)  # base
+        expr = :($(comp.Is) * ((1.-$(αf))*$(expbe) + (1.-$(αr))*$(expbc)))
+    elseif pIn == p3(comp)  # emitter
+        expr = :($(comp.Is) * ($(expbe) - $(αr)*$(expbc)))
+    else
+        return 0.
+    end
+
+    return expr
+end
+
+function dciv_diff(comp::NPN, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :_I)
+    
+    # port map: p1 is C, p2 is B, p3 is E
+    vC = ps[p1(comp)]
+    vB = ps[p2(comp)]
+    vE = ps[p3(comp)]
+
+    αf = :(($(comp.βf) / ($(comp.βf) + 1)))
+    αr = :(($(comp.βr) / ($(comp.βr) + 1)))
+
+    function expbe_d(wrt)
+        if wrt == vC
+            return 0.
+        elseif wrt == vB
+            return :((1./$(comp.VT))*exp(($(vB)-$(vE))/$(comp.VT)))
+        elseif wrt == vE
+            return :((-1./$(comp.VT))*exp(($(vB)-$(vE))/$(comp.VT)))
+        end
+        return 0.
+    end
+
+    function expbc_d(wrt)
+        if wrt == vC
+            return :((-1./$(comp.VT))*exp(($(vB)-$(vC))/$(comp.VT)))
+        elseif wrt == vB
+            return :((1./$(comp.VT))*exp(($(vB)-$(vC))/$(comp.VT)))
+        elseif wrt == vE
+            return 0.
+        end
+        return 0.
+    end
+    
+    # 9 cases ... really should just use symbolic/automatic differentiation or something
+    # Calculus.jl doesn't play nice with diff w.r.t expressions instead of symbols
+    # could get around that, but at this point it's less effort just to write the 9 equations
+    # (not enough time ..)
+
+    # case 1:
+    if pIn == p1(comp)      # collector
+        expr = :(($(comp.Is))*(($(αf))*($(expbe_d(wrt))) - ($(expbc_d(wrt)))))
+    elseif pIn == p2(comp)  # base
+        expr = :(($(comp.Is))*((1-($(αf)))*($(expbe_d(wrt))) + (1-($(αr)))*($(expbc_d(wrt)))))
+    elseif pIn == p3(comp)  # emitter
+        expr = :(($(comp.Is))*(($(expbe_d(wrt))) - αr * ($(expbc(wrt)))))
+    end
+
+    # TODO: limit the value in the same way we limited the diode value
+    # this will probably be at least as unstable as the diode was!
+    return expr
+end
+
+function dcsatisfy(comp::NPN, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
+    
+    # no extra equations
+    return Expr[]
+end
+
+function dcsatisfy_diff(comp::NPN, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
 
     return Expr[]
