@@ -7,6 +7,12 @@ using DataStructures
 abstract Component
 abstract TwoPortComponent <: Component
 
+# a parameter may be used to efficiently vary a numerical value
+# during the simulation, or over a DC sweep or something
+# (the system and Jacobian functions won't be recompiled)
+# ... for now just use symbols - but might want to do something more later
+typealias Parameter Symbol
+
 # an arbitrary, empty concrete Component, used internally when constructing
 # Resistors, Capacitors, etc (see their constructors)
 type NullComponent <: Component end
@@ -86,14 +92,14 @@ type Resistor <: TwoPortComponent
 	name::ASCIIString
 	
 	# the resistance, in Ohms
-	R::Float64
+	R::Union{Float64, Parameter}
 	
 	# resistors are non-polar of course, but for consistency
 	# we'll store connections like this
 	p1::Port
 	p2::Port
 
-	function Resistor(R::Float64)
+	function Resistor(R::Union{Float64, Parameter})
 		this = new("", R, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
@@ -108,12 +114,12 @@ type Capacitor <: TwoPortComponent
 	name::ASCIIString
 
 	# the capacitance, in Farads
-	C::Float64
+	C::Union{Float64, Parameter}
 
 	p1::Port
 	p2::Port
 
-	function Capacitor(C::Float64)
+	function Capacitor(C::Union{Float64, Parameter})
 		this = new("", C, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
@@ -128,12 +134,12 @@ type Inductor <: TwoPortComponent
 	name::ASCIIString
 
 	# the inductance, in Henrys
-	L::Float64
+	L::Union{Float64, Parameter}
 
 	p1::Port
 	p2::Port
 
-	function Inductor(L::Float64)
+	function Inductor(L::Union{Float64, Parameter})
 		this = new("", L, Port(), Port())
 		this.p1.component = this
 		this.p2.component = this
@@ -148,7 +154,7 @@ type DCVoltageSource <: TwoPortComponent
 	name::ASCIIString
 
 	# the source voltage
-	V::Float64
+	V::Union{Float64, Parameter}
 
 	# the ports: 
 	pHigh::Port
@@ -166,13 +172,13 @@ type DCCurrentSource <: TwoPortComponent
 
     name::ASCIIString
 
-    I::Float64
+    I::Union{Float64, Parameter}
 
     # the ports
     pIn::Port
     pOut::Port
 
-    function DCCurrentSource(I::Float64)
+    function DCCurrentSource(I::Union{Float64, Parameter})
         this = new("", I, Port(), Port())
         this.pIn.component = this
         this.pOut.component = this
@@ -185,20 +191,20 @@ type Diode <: TwoPortComponent
     name::ASCIIString
 
     # reverse saturation current
-    Is::Float64
+    Is::Union{Float64, Parameter}
 
     # thermal voltage (0.026 V at 25 degrees C)
-    VT::Float64
+    VT::Union{Float64, Parameter}
 
     # ideality factor (between 1 and 2)
-    n::Float64
+    n::Union{Float64, Parameter}
 
     pIn::Port
     pOut::Port
 
     # common "mistake" looks to be passing an integer as n ..
     # so don't type annotate that
-    function Diode(Is::Float64, VT::Float64, n = 1.)
+    function Diode(Is::Union{Float64, Parameter}, VT::Union{Float64, Parameter}, n = 1.)
         this = new("", Is, VT, n, Port(), Port())
         this.pIn.component = this
         this.pOut.component = this

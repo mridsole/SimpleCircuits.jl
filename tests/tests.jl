@@ -29,6 +29,10 @@ append!(tests, dciv_tests())
 include("op_systems.jl")
 append!(tests, op_systems_tests())
 
+# testing the introduction of symbols (used for parameter variation)
+include("op_symbols.jl")
+append!(tests, op_symbols_tests())
+
 function run_all_tests()
 
     println("Running all tests ...\n")

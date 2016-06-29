@@ -11,7 +11,7 @@ export newton
 include("components.jl")
 export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource
 export Diode, p1, p2
-export TwoPortComponent
+export TwoPortComponent, Parameter
 
 # methods for constructing circuits via connections
 import Base.merge!

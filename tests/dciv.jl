@@ -36,7 +36,7 @@ Test("DCIV test 2 - test DCCurrentSource", function()
     ps = PortSyms(idc.pIn => :v1, idc.pOut => :v2)
 
     @assert dciv(idc, ps, idc.pIn, :I1) == I
-    @assert dciv(idc, ps, idc.pOut, :I1) == -I
+    @assert dciv(idc, ps, idc.pOut, :I1) == :(-$(I))
 
     @assert dciv_diff(idc, ps, idc.pIn, :v1, :I1) == 0.
     @assert dciv_diff(idc, ps, idc.pIn, :v2, :I1) == 0.

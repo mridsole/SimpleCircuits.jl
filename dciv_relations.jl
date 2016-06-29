@@ -80,7 +80,7 @@ function dciv(comp::DCCurrentSource, ps::PortSyms, pIn::Port, currentSym::Union{
 
     # obviously for a DC current source we know that the current is just a constant
     # only thing that matters is direction
-    return pIn == comp.pIn ? comp.I : -comp.I
+    return pIn == comp.pIn ? comp.I : :(-$(comp.I))
 end
 
 function dciv_diff(comp::DCCurrentSource, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
@@ -210,7 +210,7 @@ function dciv(comp::Diode, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Ex
     sgn = pIn == p1(comp) ? 1. : -1.
 
     expr = :($(sgn) * $(comp.Is) * (exp(($(v1) - $(v2))
-        / ($(comp.n * comp.VT))) - 1.))
+        / ($(comp.n) * $(comp.VT))) - 1.))
 
     return expr
 end
@@ -225,8 +225,8 @@ function dciv_diff(comp::Diode, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr
 
     if wrt != v1 && wrt != v2 return 0. end
 
-    expr = :(($(sgn) / ($(comp.n * comp.VT))) * $(comp.Is) * 
-        exp(($(v1) - $(v2)) / $(comp.n * comp.VT)))
+    expr = :(($(sgn) / ($(comp.n) * $(comp.VT))) * $(comp.Is) * 
+        exp(($(v1) - $(v2)) / ($(comp.n) * $(comp.VT))))
 
     return expr
 end
