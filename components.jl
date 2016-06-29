@@ -13,6 +13,9 @@ abstract TwoPortComponent <: Component
 # ... for now just use symbols - but might want to do something more later
 typealias Parameter Symbol
 
+# for potential generality later on
+symbol(param::Parameter) = param
+
 # an arbitrary, empty concrete Component, used internally when constructing
 # Resistors, Capacitors, etc (see their constructors)
 type NullComponent <: Component end
@@ -222,6 +225,19 @@ p2(comp::Component) = comp.p2
 p2(comp::DCVoltageSource) = comp.pHigh
 p2(comp::DCCurrentSource) = comp.pOut
 p2(comp::Diode) = comp.pOut
+
+function parameters(comp::Component)
+
+    # some parameters may be tied!
+    params = OrderedSet{Parameter}()
+
+    # wow
+    for val in map(x->getfield(comp, x), fieldnames(typeof(comp)))
+        if typeof(val) == Parameter push!(params, val) end
+    end
+
+    return params
+end
 
 # obtain the name of a component type
 function component_type_name(c)

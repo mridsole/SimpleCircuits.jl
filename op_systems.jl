@@ -1,8 +1,11 @@
 # contains the factory functions for generating the (non)-linear system as a
 # vector function, and for generating the corresponding Jacobian matrix function
+using SimpleCircuits
 
 # sub-module for generated system/jacobian functions
 module Generated
+
+using SimpleCircuits
 
 end
 
@@ -67,6 +70,28 @@ function get_components_ordered(sym_map::SymbolMap)
     return components
 end
 
+# get an ordered set of all the parameters in the circuit
+# given a symbol map, which provides the ordering
+function parameters(sym_map::SymbolMap)
+
+    params = OrderedSet{Parameter}()
+
+    for (node, sym) in collect(sym_map)
+
+        # the symbol map may contain both nodes and components ...
+        if typeof(node) != Node break end
+
+        for port in node.ports
+            # OrderedSet takes care of duplicates ...
+            for param in parameters(port.component)
+                push!(params, param)
+            end
+        end
+    end
+
+    return params
+end
+
 # generate the expressions for the system of equations for a circuit
 # (used in gen_sys_F)
 function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
@@ -107,7 +132,7 @@ function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
             return :_
         end
     end
-
+    
     # the expressions that we're going to return
     exprs = []
     
@@ -119,7 +144,6 @@ function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
             push!(exprs, :($(sym)))
             continue
         end
-
 
         # otherwise sum the currents going IN to the node
         expr = 0.
@@ -168,16 +192,33 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
 
     # get the system expressions
     # sys_exprs = 
-    
+
     nv_exprs = gen_sys_exprs(sym_map, circ)
     n_exprs = length(nv_exprs)
 
+    # now, consider that all the parameters are known at "compile" time
+    # (their symbols - not their numerical values, obviously)
+    params = parameters(sym_map)
+
+    sym1 = :A
+    sym_sym1 = :($(sym1))
+
     func_expr = quote
-        
+
         # x is the vector of node voltage and dummy current variables
         # nv is the memory to write the evaluated equations to
-        function $(func_label)(x::Vector{Float64}, nv::Vector{Float64})
+        function $(func_label)(x::Vector{Float64}, nv::Vector{Float64}, 
+            param_vals::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+
+            # first, sub all parameter symbols with their numerical values
+            $( ex = quote end;
+            for param in params
+                # send help
+                push!(ex.args, :($(symbol(param)) = param_vals[$(Meta.quot(param))]))
+            end;
+            ex )
             
+            # now put the equations in
             $( ex = quote end;
             for i = 1:n_exprs
                 push!(ex.args, :(nv[$(i)] = $(nv_exprs[i])))
@@ -187,6 +228,8 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
             return nv
         end
     end
+
+    println(func_expr)
 
     Generated.eval(func_expr)
 end
@@ -335,10 +378,23 @@ function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     # get the expressions
     exprs = gen_J_exprs(sym_map, circ)
 
+    # now, consider that all the parameters are known at "compile" time
+    # (their symbols - not their numerical values, obviously)
+    params = parameters(sym_map)
+
     # make the function
     func_expr = quote
-        function ($(function_label))(x::Vector{Float64}, J::Matrix{Float64})
+        function ($(function_label))(x::Vector{Float64}, J::Matrix{Float64},
+            param_vals::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+
+            # set the parameters equal to their numerical values
+            $( ex = quote end;
+            for param in params
+                push!(ex.args, :($(symbol(param)) = $(param_vals[param])))
+            end;
+            ex )
             
+            # put the equations in
             $(expr = quote end;
             for i in eachindex(exprs)
                 push!(expr.args, :(J[$(i)] = $(exprs[i])))

@@ -10,7 +10,7 @@ export newton
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
 include("components.jl")
 export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource
-export Diode, p1, p2
+export Diode, p1, p2, parameters
 export TwoPortComponent, Parameter
 
 # methods for constructing circuits via connections

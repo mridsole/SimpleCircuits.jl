@@ -1,5 +1,3 @@
-using SimpleCircuits
-
 print_exprs = true
 print_J_exprs = true
 print_op = true

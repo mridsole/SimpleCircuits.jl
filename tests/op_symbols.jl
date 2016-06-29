@@ -1,9 +1,5 @@
 using SimpleCircuits
 
-print_exprs = true
-print_J_exprs = true
-print_op = true
-
 op_symbols_tests() = Array{Test, 1}([
 
 Test("op symbols test 1 - circuit1 voltage symbol exprs", function()
@@ -26,6 +22,8 @@ Test("op symbols test 1 - circuit1 voltage symbol exprs", function()
     
     println("Circuti 1 jacobian expressions (with V symbol):")
     println(J_exprs)
+
+    gen_sys_F(:c1_F, sym_map, circ)
 end)
 
 ])
