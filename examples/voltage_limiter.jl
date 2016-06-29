@@ -1,6 +1,5 @@
 # DC sweep the input to a voltage limiter circuit, and plot the output voltage
 
-begin
 workspace()
 include("../SimpleCircuits.jl")
 using SimpleCircuits
@@ -19,5 +18,11 @@ connect!(circ, p1(d2), v_DC.pLow)
 
 params = Dict(:V => -10.)
 
-op(circ, params=params)
+v_range = -15.:0.1:15.
+v_out = zeros(length(v_range))
+
+for i = 1:length(v_range)
+    params[:V] = v_range[i]
+    soln = op(circ, params=params)
+    v_out[i] = soln[p2(r1)]
 end
