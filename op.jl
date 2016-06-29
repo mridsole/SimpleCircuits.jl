@@ -1,19 +1,19 @@
 # contains the numerical values for a circuit operating point
-type CircuitOP
+type CircuitOP{T}
     
-    node_voltages::Dict{Node, Float64}
-    dcvs_currents::Dict{Component, Float64}
+    node_voltages::Dict{Node, T}
+    dcvs_currents::Dict{Component, T}
 
-    CircuitOP() = new(Dict{Node, Float64}(), Dict{Component, Float64}())
+    CircuitOP() = new(Dict{Node, T}(), Dict{Component, T}())
 end
 
 import Base.setindex!, Base.getindex
 
-function Base.setindex!(cop::CircuitOP, val::Float64, node::Node)
+function Base.setindex!{T}(cop::CircuitOP{T}, val::T, node::Node)
     cop.node_voltages[node] = val 
 end
 
-function Base.setindex!(cop::CircuitOP, val::Float64, dcvs::Component) 
+function Base.setindex!{T}(cop::CircuitOP{T}, val::T, dcvs::Component) 
     cop.dcvs_currents[dcvs] = val 
 end
 
@@ -22,6 +22,8 @@ Base.getindex(cop::CircuitOP, dcvs::Component) = cop.dcvs_currents[dcvs]
 
 # get voltage at ports (uses the connected node)
 Base.getindex(cop::CircuitOP, port::Port) = cop.node_voltages[port.node]
+
+Base.keys(cop::CircuitOP) = append!(keys(cop.node_voltages), keys(cop.dcvs_currents))
 
 function show(io::IO, cop::CircuitOP)
 
@@ -181,7 +183,7 @@ function op_linear(circ::Circuit)
     # should happen when we replace with non-ideal sources
     sol_raw = A \ b
 
-    cop = CircuitOP()
+    cop = CircuitOP{Float64}()
 
     # return a mapping from nodes to their voltages
     # and from DCVoltageSources to their currents
@@ -191,10 +193,9 @@ function op_linear(circ::Circuit)
     return cop
 end
 
-# newton-raphson for non-linear circuits - return the unmapped voltage/currents
-function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
+function op_raw(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
     params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
-    
+
     # symbol map
     sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
     n = length(sym_map)
@@ -210,11 +211,60 @@ function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
     # don't think I have time for that kind of error handling ..
     x = newton(F, J, x0, params)
     
-    cop = CircuitOP()
+    return x
+end
+
+# newton-raphson for non-linear circuits - return the unmapped voltage/currents
+function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
+    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    
+    # symbol map
+    sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
+
+    x = op_raw(circ, sym_map, F, J, x0, params)
+
+    cop = CircuitOP{Float64}()
 
     i = 1
     for (node_or_comp, sym) in sym_map
         cop[node_or_comp] = x[i]
+        i += 1
+    end
+
+    return cop
+end
+
+# operating point analysis, sweeping over gT
+function dc_sweep(circ::Circuit, sweep_param::Parameter, sweep_range::Range{Float64},
+    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    
+    # symbol map
+    sym_map = gen_sym_map(circ)
+    n = length(sym_map)
+
+    # generate functions if necessary
+    F = gen_sys_F(:F, sym_map, circ)
+    J = gen_sys_J(:J, sym_map, circ)
+
+    x0 = zeros(n)
+    x = Array{Float64, 2}(n, length(sweep_range))
+
+    i = 1
+    for param in sweep_range
+
+        params[sweep_param] = param
+        x0 = op_raw(circ, sym_map=sym_map, F=F, J=J, x0=x0, params=params)
+        
+        x[:, i] = x0
+
+        i += 1
+    end
+
+    cop = CircuitOP{Vector{Float64}}()
+
+    i = 1
+    for (node_or_comp, sym) in sym_map
+        cop[node_or_comp] = vec(x[i, :])
         i += 1
     end
 

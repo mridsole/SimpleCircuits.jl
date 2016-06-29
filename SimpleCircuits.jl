@@ -37,7 +37,7 @@ export gen_sym_map, gen_sys_exprs, gen_sys_F, gen_J_exprs, gen_sys_J
 # operating point analysis
 # TODO: this is the old, linear only implementation - name this appropriately
 include("op.jl")
-export op_linear, op
+export op_linear, op_raw, op, dc_sweep
 
 # include tests
 include("tests/tests.jl")
