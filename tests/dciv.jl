@@ -134,7 +134,7 @@ Test("DCIV test 6 - test Diode", function()
 
     ps = PortSyms(p1(d1) => :v1, p2(d1) => :v2)
 
-    println(dciv(d1, ps, p1(d1), :I1))
+    # TODO: some asserts here
 end)
 
 ])

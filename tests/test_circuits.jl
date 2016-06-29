@@ -100,3 +100,21 @@ macro circuit6()
         connect!(circ, v_DC.pLow, circ.gnd)
     end)
 end
+
+# a simple voltage limiter, with two diodes
+macro circuit7()
+
+    esc(quote
+        circ = Circuit()
+        r1 = Resistor(0.5e+3)
+        d1 = Diode(1e-11, 0.026, 1.)
+        d2 = Diode(1e-11, 0.026, 1.)
+        v_DC = DCVoltageSource(15.)
+        connect!(circ, v_DC.pLow, circ.gnd)
+        connect!(circ, p1(r1), v_DC.pHigh)
+        connect!(circ, p2(r1), p1(d1))
+        connect!(circ, p2(r1), p2(d2))
+        connect!(circ, p2(d1), v_DC.pLow)
+        connect!(circ, p1(d2), v_DC.pLow)
+    end)
+end

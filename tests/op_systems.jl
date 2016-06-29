@@ -307,6 +307,27 @@ Test("op system test 22 - gen_sys_J circuit6", function()
         println("Circuit 6 operating point: ")
         println(newton(F, J, x0))
     end
+end),
+
+Test("op system test 23 - gen_sys_J circuit7", function()
+
+    @circuit7
+    
+    sym_map = gen_sym_map(circ)
+
+    # (this should already exist)
+    gen_sys_F(:c7_F, sym_map, circ)
+    gen_sys_J(:c7_J, sym_map, circ)
+
+    F = SimpleCircuits.Generated.c7_F
+    J = SimpleCircuits.Generated.c7_J
+
+    x0 = zeros(length(sym_map))
+    
+    if print_op
+        println("Circuit 7 operating point: ")
+        println(newton(F, J, x0))
+    end
 end)
 
 ])
