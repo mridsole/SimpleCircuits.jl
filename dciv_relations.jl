@@ -209,8 +209,31 @@ function dciv(comp::Diode, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Ex
     v2 = ps[p2(comp)]
     sgn = pIn == p1(comp) ? 1. : -1.
 
-    expr = :($(sgn) * $(comp.Is) * (exp(($(v1) - $(v2))
-        / ($(comp.n) * $(comp.VT))) - 1.))
+    # a hack: define a 'critical voltage' - which, if passed, make the current linear instead
+    # and also make the first derivative w.r.t. voltage continuous
+    # if we don't do this, we will get NaNs unless we have very good initial conditions
+    #expr = :($(sgn) * $(comp.Is) * (exp(($(v1) - $(v2))
+    #    / ($(comp.n) * $(comp.VT))) - 1.))
+
+    # this is just a heuristic ...
+    v_crit_expr = :(-log10($(comp.Is)) / 10.)
+    I_crit_expr = :($(comp.Is) * (exp($(v_crit_expr) / ($(comp.n) * $(comp.VT))) - 1.))
+
+    # I derivative expression at v_crit
+    diff_I_crit_expr = :(($(comp.Is)/($(comp.n)*$(comp.VT)))*
+        (exp($(v_crit_expr)/($(comp.n)*$(comp.VT)))))
+
+    expr = quote
+        I = 0.;
+        if $(v1) - $(v2) > $(v_crit_expr)
+            I = $(I_crit_expr) + $(diff_I_crit_expr) * ($(v1) - $(v2) - $(v_crit_expr));
+        else
+            I = $(comp.Is) * (exp(($(v1) - $(v2)) / ($(comp.n) * $(comp.VT))) - 1.);
+        end;
+        I = $(sgn) * I
+        I
+    end
+
 
     return expr
 end
@@ -227,6 +250,26 @@ function dciv_diff(comp::Diode, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr
 
     expr = :(($(sgn) / ($(comp.n) * $(comp.VT))) * $(comp.Is) * 
         exp(($(v1) - $(v2)) / ($(comp.n) * $(comp.VT))))
+
+    # this is just a heuristic ...
+    v_crit_expr = :(-log10($(comp.Is)) / 10.)
+    I_crit_expr = :($(comp.Is) * (exp($(v_crit_expr) / ($(comp.n) * $(comp.VT))) - 1.))
+
+    # I derivative expression at v_crit
+    diff_I_crit_expr = :(($(comp.Is)/($(comp.n)*$(comp.VT)))*
+        (exp($(v_crit_expr)/($(comp.n)*$(comp.VT)))))
+
+    expr = quote
+        I = 0.;
+        if $(v1) - $(v2) > $(v_crit_expr)
+            I = $(diff_I_crit_expr);
+        else
+            # yer true
+            I = (1. / ($(comp.n) * $(comp.VT))) * $(comp.Is) * 
+                exp(($(v1) - $(v2)) / ($(comp.n) * $(comp.VT)));
+        end
+        I = $(sgn) * I
+    end
 
     return expr
 end
