@@ -1,6 +1,7 @@
 # i couldn't find any available packages for implementing Newton-Raphson - 
 # so here it is
-function newton(f::Function, J::Function, x0::Vector{Float64})
+function newton(f::Function, J::Function, x0::Vector{Float64}, 
+    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
     
     x = copy(x0)
     fx = zeros(length(x))
@@ -16,14 +17,14 @@ function newton(f::Function, J::Function, x0::Vector{Float64})
         # cause we're not using the return values
 
         # updates fx
-        f(x, fx)::Vector{Float64}
+        f(x, fx, params)::Vector{Float64}
 
         if norm(fx) < tolerance
             return x
         end
 
         # updates Jx
-        J(x, Jx)::Matrix{Float64}
+        J(x, Jx, params)::Matrix{Float64}
 
         # updates x
         x = x + (Jx \ (-fx))

@@ -24,6 +24,14 @@ Test("op symbols test 1 - circuit1 voltage symbol exprs", function()
     println(J_exprs)
 
     gen_sys_F(:c1_F, sym_map, circ)
+    gen_sys_J(:c1_J, sym_map, circ)
+    F = SimpleCircuits.Generated.c1_F
+    J = SimpleCircuits.Generated.c1_J
+
+    params = Dict(:V => 10.)
+
+    # run operating point analysis
+    println(newton(F, J, zeros(length(sym_map)), params))
 end)
 
 ])

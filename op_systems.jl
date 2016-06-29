@@ -1,6 +1,6 @@
 # contains the factory functions for generating the (non)-linear system as a
 # vector function, and for generating the corresponding Jacobian matrix function
-using SimpleCircuits
+
 
 # sub-module for generated system/jacobian functions
 module Generated
@@ -300,40 +300,6 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
         end
     end
 
-    # now fill in the remaining equations (using dcsatisfy_diff)
-#    comps_ordered = get_components_ordered(sym_map)
-#    i = n_nodes + 1   # which equation we're at
-#    for comp in comps_ordered
-#
-#        # if either port floating, the corresponding equation is 0
-#        # (currently - this isn't actually correct! TODO)
-#        if is_floating(p1(comp)) || is_floating(p2(comp))
-#            continue
-#        end
-#
-#        ps = PortSyms(p1(comp) => sym_map[p1(comp).node],
-#        p2(comp) => sym_map[p2(comp).node])
-#
-#        # each component has a number of extra equations that must be satisfied
-#        # for each one of these, get derivative w.r.t. each variable
-#        
-#        
-#        # differentiate w.r.t. each variable
-#        for j = 1:n_exprs
-#
-#            # well this is obviously broken
-#            diff_eqns = dcsatisfy_diff(comp, ps, sym_map_pairs[j].second,
-#                get_dum_cur(comp))
-#            
-#            for k = 1:length(diff_eqns)
-#                expr_m[i + k - 1, j] = :($(expr_m[i + k - 1, j]) + $(diff_eqns[k]))
-#            end
-#
-#            println(length(diff_eqns))
-#            i += length(diff_eqns)
-#        end
-#    end
-
     comps_ordered = get_components_ordered(sym_map)
 
     # for each variable, differentiate each equation of each component
@@ -390,7 +356,8 @@ function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
             # set the parameters equal to their numerical values
             $( ex = quote end;
             for param in params
-                push!(ex.args, :($(symbol(param)) = $(param_vals[param])))
+                # send help
+                push!(ex.args, :($(symbol(param)) = param_vals[$(Meta.quot(param))]))
             end;
             ex )
             
