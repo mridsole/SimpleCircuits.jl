@@ -294,20 +294,54 @@ function dciv(comp::NPN, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr
     vB = ps[p2(comp)]
     vE = ps[p3(comp)]
 
-    αf = :(($(comp.βf) / ($(comp.βf) + 1)))
-    αr = :(($(comp.βr) / ($(comp.βr) + 1)))
+    αf = :((($(comp.βf) / ($(comp.βf) + 1))))
+    αr = :((($(comp.βr) / ($(comp.βr) + 1))))
+
+    # heuristic for stability linearization again - see dciv for diode
+    v_crit = :(-log10($(comp.Is))/10.)
 
     # some more useful building blocks
     expbe = :((exp(($(vB)-$(vE))/$(comp.VT))-1.))
     expbc = :((exp(($(vB)-$(vC))/$(comp.VT))-1.))
 
+    function exp_v(at)
+        return :(((exp(($(at))/$(comp.VT))-1.)))
+    end
+
+    # we can 'evaulate' this at the critical voltages, for example
+    function exp_d(at)
+        return :(((1./$(comp.VT))*exp(($(at))/$(comp.VT))))
+    end
+
+    # exponential, linearized passed the critical voltage
+    function exp_crit(v)
+        quote
+            val = 0.
+            if $(v) > $(v_crit)
+                val = $(exp_v(v_crit)) + $(exp_d(v_crit)) * ($(v) - $(v_crit))
+            else
+                val = $(exp_v(v))
+            end
+            val
+        end
+    end
+
+    expr = quote
+        if $(vB) - $(vE) > $(v_crit) vBE = $(v_crit) else vBE = $(vB) - $(vE) end
+        if $(vB) - $(vC) > $(v_crit) vBC = $(v_crit) else vBC = $(vB) - $(vC) end
+    end
+
+    # really hope i don't have to come back to this ...
+    exBE = exp_crit(:($(vB) - $(vE)))
+    exBC = exp_crit(:($(vB) - $(vC)))
+
     # use the Ebers-Moll model
     if pIn == p1(comp)      # collector
-        expr = :($(comp.Is) * ($(αf) * $(expbe) - $(expbc)))
+        expr = :($(comp.Is) * ($(αf) * ($(exBE)) - ($(exBC))))
     elseif pIn == p2(comp)  # base
-        expr = :($(comp.Is) * ((1.-$(αf))*$(expbe) + (1.-$(αr))*$(expbc)))
+        expr = :($(comp.Is) * ((1.-$(αf))*($(exBE)) + (1.-$(αr))*($(exBC))))
     elseif pIn == p3(comp)  # emitter
-        expr = :($(comp.Is) * ($(expbe) - $(αr)*$(expbc)))
+        expr = :($(comp.Is) * ($(exBE) - $(αr)*($(exBC))))
     else
         return 0.
     end
@@ -323,43 +357,51 @@ function dciv_diff(comp::NPN, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
     vB = ps[p2(comp)]
     vE = ps[p3(comp)]
 
-    αf = :(($(comp.βf) / ($(comp.βf) + 1)))
-    αr = :(($(comp.βr) / ($(comp.βr) + 1)))
+    αf = :((($(comp.βf) / ($(comp.βf) + 1))))
+    αr = :((($(comp.βr) / ($(comp.βr) + 1))))
 
-    function expbe_d(wrt)
+    function expbe_d(wrt, at)
         if wrt == vC
             return 0.
         elseif wrt == vB
-            return :((1./$(comp.VT))*exp(($(vB)-$(vE))/$(comp.VT)))
+            return :(((1./$(comp.VT))*exp(($(at))/$(comp.VT))))
         elseif wrt == vE
-            return :((-1./$(comp.VT))*exp(($(vB)-$(vE))/$(comp.VT)))
+            return :(((-1./$(comp.VT))*exp(($(at))/$(comp.VT))))
         end
         return 0.
     end
 
-    function expbc_d(wrt)
+    function expbc_d(wrt, at)
         if wrt == vC
-            return :((-1./$(comp.VT))*exp(($(vB)-$(vC))/$(comp.VT)))
+            return :(((-1./$(comp.VT))*exp(($(at))/$(comp.VT))))
         elseif wrt == vB
-            return :((1./$(comp.VT))*exp(($(vB)-$(vC))/$(comp.VT)))
+            return :(((1./$(comp.VT))*exp(($(at))/$(comp.VT))))
         elseif wrt == vE
             return 0.
         end
         return 0.
     end
     
+    # heuristic for stability linearization again - see dciv for diode
+    v_crit = :(-log10($(comp.Is))/10.)
+    
     # 9 cases ... really should just use symbolic/automatic differentiation or something
     # Calculus.jl doesn't play nice with diff w.r.t expressions instead of symbols
     # could get around that, but at this point it's less effort just to write the 9 equations
     # (not enough time ..)
 
-    # case 1:
+    expr = quote
+        if $(vB) - $(vE) > $(v_crit) vBE = $(v_crit) else vBE = $(vB) - $(vE) end
+        if $(vB) - $(vC) > $(v_crit) vBC = $(v_crit) else vBC = $(vB) - $(vC) end
+    end
+
     if pIn == p1(comp)      # collector
-        expr = :(($(comp.Is))*(($(αf))*($(expbe_d(wrt))) - ($(expbc_d(wrt)))))
+        push!(expr.args, :(($(comp.Is))*(($(αf))*($(expbe_d(wrt, :vBE))) - ($(expbc_d(wrt, :vBC))))))
     elseif pIn == p2(comp)  # base
-        expr = :(($(comp.Is))*((1-($(αf)))*($(expbe_d(wrt))) + (1-($(αr)))*($(expbc_d(wrt)))))
+        push!(expr.args, :(($(comp.Is))*((1-($(αf)))*($(expbe_d(wrt, :vBE))) + 
+            (1-($(αr)))*($(expbc_d(wrt, :vBC))))))
     elseif pIn == p3(comp)  # emitter
-        expr = :(($(comp.Is))*(($(expbe_d(wrt))) - αr * ($(expbc(wrt)))))
+        push!(expr.args, :($(comp.Is)*($(expbe_d(wrt, :vBE)) - $(αr) * $(expbc(wrt, :vBC)))))
     end
 
     # TODO: limit the value in the same way we limited the diode value

@@ -15,6 +15,7 @@ function newton(f::Function, J::Function, x0::Vector{Float64},
 
         # i don't know if the type annotations help here,
         # cause we're not using the return values
+        # sleep(1)
 
         # updates fx
         f(x, fx, params)::Vector{Float64}
@@ -25,6 +26,10 @@ function newton(f::Function, J::Function, x0::Vector{Float64},
 
         # updates Jx
         J(x, Jx, params)::Matrix{Float64}
+
+        # println(x)
+        # println(fx)
+        # println(Jx)
 
         # updates x
         x = x + (Jx \ (-fx))

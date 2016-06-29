@@ -365,7 +365,6 @@ function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
             $( ex = quote end;
             for param in params
                 # send help
-                push!(println("a"))
                 push!(ex.args, :($(symbol(param)) = param_vals[$(Meta.quot(param))]))
             end;
             ex )
