@@ -2,9 +2,9 @@
 type CircuitOP
     
     node_voltages::Dict{Node, Float64}
-    dcvs_currents::Dict{DCVoltageSource, Float64}
+    dcvs_currents::Dict{Component, Float64}
 
-    CircuitOP() = new(Dict{Node, Float64}(), Dict{DCVoltageSource, Float64}())
+    CircuitOP() = new(Dict{Node, Float64}(), Dict{Component, Float64}())
 end
 
 import Base.setindex!, Base.getindex
@@ -13,12 +13,12 @@ function Base.setindex!(cop::CircuitOP, val::Float64, node::Node)
     cop.node_voltages[node] = val 
 end
 
-function Base.setindex!(cop::CircuitOP, val::Float64, dcvs::DCVoltageSource) 
+function Base.setindex!(cop::CircuitOP, val::Float64, dcvs::Component) 
     cop.dcvs_currents[dcvs] = val 
 end
 
 Base.getindex(cop::CircuitOP, node::Node) = cop.node_voltages[node]
-Base.getindex(cop::CircuitOP, dcvs::DCVoltageSource) = cop.dcvs_currents[dcvs]
+Base.getindex(cop::CircuitOP, dcvs::Component) = cop.dcvs_currents[dcvs]
 
 # get voltage at ports (uses the connected node)
 Base.getindex(cop::CircuitOP, port::Port) = cop.node_voltages[port.node]
@@ -33,12 +33,9 @@ end
 
 # methods for linear and non-linear operating point analysis
 
-# find the DC operating point
-function op(circ::Circuit)
+# find the DC operating point of a linear circuit
+function op_linear(circ::Circuit)
     
-    # TODO: figure out how this integrates with Newton-Raphson iteration
-    # for non-linear circuits
-
     # TODO: since for the majority of circuits, the number of 
     # connections on a node is generally much smaller than the 
     # total number of nodes plus the total number of current sources
@@ -190,6 +187,36 @@ function op(circ::Circuit)
     # and from DCVoltageSources to their currents
     for i = 1:n_nodes cop[nodes_vec[i]] = sol_raw[i] end
     for i = 1:n_dcvs cop[dcv_sources[i]] = sol_raw[n_nodes + i] end
+
+    return cop
+end
+
+# newton-raphson for non-linear circuits - return the unmapped voltage/currents
+function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
+    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    
+    # symbol map
+    sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
+    n = length(sym_map)
+
+    # generate functions if necessary
+    F = F == nothing ? gen_sys_F(:F, sym_map, circ) : F
+    J = J == nothing ? gen_sys_J(:J, sym_map, circ) : J
+
+    # solve
+    x0 = x0 == nothing ? zeros(n) : x0
+
+    # TODO: what if this fails to converge?
+    # don't think I have time for that kind of error handling ..
+    x = newton(F, J, x0, params)
+    
+    cop = CircuitOP()
+
+    i = 1
+    for (node_or_comp, sym) in sym_map
+        cop[node_or_comp] = x[i]
+        i += 1
+    end
 
     return cop
 end

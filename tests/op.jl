@@ -9,7 +9,7 @@ Test("operating point test 1", function()
     @circuit1
 
     # do the analysis
-    op(circ)
+    op_linear(circ)
 
     # TODO: ensure the values are correct
 
@@ -22,20 +22,20 @@ Test("operating point test 2", function()
 
     # testing a more complicated circuit
     @circuit2
-    op(circ)
+    op_linear(circ)
 end),
 
 # TODO: add numeric assertions in the following tests to ensure validity
 Test("operating point test 3", function()
 
     @circuit3
-    op(circ)
+    op_linear(circ)
 end),
 
 Test("operating point test 4", function()
 
     @circuit4
-    op(circ)
+    op_linear(circ)
 end),
 
 Test("operating point test 5", function()

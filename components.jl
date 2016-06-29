@@ -163,7 +163,7 @@ type DCVoltageSource <: TwoPortComponent
 	pHigh::Port
 	pLow::Port
 
-	function DCVoltageSource(V::Float64)
+	function DCVoltageSource(V::Union{Float64, Parameter})
 		this = new("", V, Port(), Port())
 		this.pHigh.component = this
 		this.pLow.component = this

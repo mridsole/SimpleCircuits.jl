@@ -229,9 +229,8 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
         end
     end
 
-    println(func_expr)
-
     Generated.eval(func_expr)
+    return getfield(Generated, func_label)
 end
 
 # generate the matrix of expressions representing the jacobian
@@ -336,7 +335,7 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
 end
 
 # generate the function returning the Jacobian of the above system
-function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
+function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     
     # generate a function that computes the jacobian based on generated exprs
     # (and given a mapping from nodes/comps to voltage/dummy current symbols)
@@ -350,7 +349,7 @@ function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
 
     # make the function
     func_expr = quote
-        function ($(function_label))(x::Vector{Float64}, J::Matrix{Float64},
+        function ($(func_label))(x::Vector{Float64}, J::Matrix{Float64},
             param_vals::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
 
             # set the parameters equal to their numerical values
@@ -376,4 +375,5 @@ function gen_sys_J(function_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     # this is a bit of a hack - but apparently anonymous functions 
     # aren't very fast (FastAnonymous.jl ??)
     Generated.eval(func_expr)
+    return getfield(Generated, func_label)
 end
