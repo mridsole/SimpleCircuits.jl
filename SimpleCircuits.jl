@@ -1,5 +1,6 @@
 # MATH3976 project - a simple circuit simulator for developing 
 # analog circuit design intuition
+# dependencies: DataStructures.jl
 
 module SimpleCircuits
 

@@ -125,7 +125,7 @@ macro circuit8()
     esc(quote
         circ = Circuit()
         rc = Resistor(1e+3)
-        rb = Resistor(100.)
+        rb = Resistor(40e+3)
         vcc = DCVoltageSource(10.)
         q1 = NPN()
         connect!(circ, circ.gnd, vcc.pLow)

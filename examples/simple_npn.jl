@@ -16,11 +16,11 @@ plot(collect(rb_vals), circ_soln[q1.pC])
 grid(b=true, which="major")
 
 # now, let's fix rb at 10kΩ and sweep over q1.Is
-rb.R = 1e+3
+rb.R = 10e+3
 q1.Is = :Is
 params = Dict(:Is => 1e-12)
 
-Is_vals = logspace(-11., -15., 200)
+Is_vals = logspace(-15., -11., 200)
 circ_soln = dc_sweep(circ, :Is, Is_vals, params)
 
 subplot(2, 1, 2)

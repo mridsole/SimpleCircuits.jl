@@ -18,13 +18,14 @@
 typealias PortSyms Dict{Port, Union{Symbol, Expr}}
 
 # specify which components use dummy currents
-uses_dummy_current(comp::DCVoltageSource) = true
-uses_dummy_current(comp::DCCurrentSource) = false
-uses_dummy_current(comp::Resistor) = false
-uses_dummy_current(comp::Capacitor) = false
-uses_dummy_current(comp::Inductor) = true
-uses_dummy_current(comp::Diode) = false
-uses_dummy_current(comp::NPN) = false
+uses_dummy_current(comp::DCVoltageSource)   = true
+uses_dummy_current(comp::DCCurrentSource)   = false
+uses_dummy_current(comp::Resistor)          = false
+uses_dummy_current(comp::Capacitor)         = false
+uses_dummy_current(comp::Inductor)          = true
+uses_dummy_current(comp::Diode)             = false
+uses_dummy_current(comp::NPN)               = false
+uses_dummy_current(comp::PNP)               = false
 
 # IV relations for a voltage source
 # in this case, we don't use most of the interface because all we're returning is the 
@@ -341,7 +342,7 @@ function dciv(comp::NPN, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr
     elseif pIn == p2(comp)  # base
         expr = :($(comp.Is) * ((1.-$(αf))*($(exBE)) + (1.-$(αr))*($(exBC))))
     elseif pIn == p3(comp)  # emitter
-        expr = :($(comp.Is) * ($(exBE) - $(αr)*($(exBC))))
+        expr = :(-$(comp.Is) * ($(exBE) - $(αr)*($(exBC))))
     else
         return 0.
     end
@@ -401,7 +402,7 @@ function dciv_diff(comp::NPN, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
         push!(expr.args, :(($(comp.Is))*((1-($(αf)))*($(expbe_d(wrt, :vBE))) + 
             (1-($(αr)))*($(expbc_d(wrt, :vBC))))))
     elseif pIn == p3(comp)  # emitter
-        push!(expr.args, :($(comp.Is)*($(expbe_d(wrt, :vBE)) - $(αr) * $(expbc(wrt, :vBC)))))
+        push!(expr.args, :(-$(comp.Is)*($(expbe_d(wrt, :vBE)) - $(αr) * $(expbc_d(wrt, :vBC)))))
     end
 
     # TODO: limit the value in the same way we limited the diode value
@@ -416,6 +417,135 @@ function dcsatisfy(comp::NPN, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I
 end
 
 function dcsatisfy_diff(comp::NPN, ps::PortSyms, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :I)
+
+    return Expr[]
+end
+
+# the PNP equations are similar, but with some signs/voltages flipped - careful!
+function dciv(comp::PNP, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :_I)
+    
+    # port map: p1 is C, p2 is B, p3 is E
+    vC = ps[p1(comp)]
+    vB = ps[p2(comp)]
+    vE = ps[p3(comp)]
+
+    αf = :((($(comp.βf) / ($(comp.βf) + 1))))
+    αr = :((($(comp.βr) / ($(comp.βr) + 1))))
+
+    # heuristic for stability linearization again - see dciv for diode
+    v_crit = :(-log10($(comp.Is))/10.)
+
+    # some more useful building blocks
+    expbe = :((exp(($(vB)-$(vE))/$(comp.VT))-1.))
+    expbc = :((exp(($(vB)-$(vC))/$(comp.VT))-1.))
+
+    function exp_v(at)
+        return :(((exp(($(at))/$(comp.VT))-1.)))
+    end
+
+    # we can 'evaulate' this at the critical voltages, for example
+    function exp_d(at)
+        return :(((1./$(comp.VT))*exp(($(at))/$(comp.VT))))
+    end
+
+    # exponential, linearized passed the critical voltage
+    function exp_crit(v)
+        quote
+            val = 0.
+            if $(v) > $(v_crit)
+                val = $(exp_v(v_crit)) + $(exp_d(v_crit)) * ($(v) - $(v_crit))
+            else
+                val = $(exp_v(v))
+            end
+            val
+        end
+    end
+
+    expr = quote
+        if $(vE) - $(vB) > $(v_crit) vEB = $(v_crit) else vEB = $(vE) - $(vB) end
+        if $(vC) - $(vB) > $(v_crit) vCB = $(v_crit) else vCB = $(vC) - $(vB) end
+    end
+
+    exEB = exp_crit(:($(vE) - $(vB)))
+    exCB = exp_crit(:($(vC) - $(vB)))
+
+    # use the Ebers-Moll model
+    if pIn == p1(comp)      # collector
+        expr = :(-$(comp.Is) * ($(αf) * ($(exEB)) - ($(exCB))))
+    elseif pIn == p2(comp)  # base
+        expr = :(-$(comp.Is) * ((1.-$(αf))*($(exEB)) + (1.-$(αr))*($(exCB))))
+    elseif pIn == p3(comp)  # emitter
+        expr = :($(comp.Is) * ($(exEB) - $(αr)*($(exCB))))
+    else
+        return 0.
+    end
+
+    return expr
+end
+
+function dciv_diff(comp::PNP, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :_I)
+    
+    # port map: p1 is C, p2 is B, p3 is E (same as NPN)
+    vC = ps[p1(comp)]
+    vB = ps[p2(comp)]
+    vE = ps[p3(comp)]
+
+    αf = :((($(comp.βf) / ($(comp.βf) + 1))))
+    αr = :((($(comp.βr) / ($(comp.βr) + 1))))
+
+    function expeb_d(wrt, at)
+        if wrt == vC
+            return 0.
+        elseif wrt == vB
+            return :(((-1./$(comp.VT))*exp(($(at))/$(comp.VT))))
+        elseif wrt == vE
+            return :(((1./$(comp.VT))*exp(($(at))/$(comp.VT))))
+        end
+        return 0.
+    end
+
+    function expcb_d(wrt, at)
+        if wrt == vC
+            return :(((1./$(comp.VT))*exp(($(at))/$(comp.VT))))
+        elseif wrt == vB
+            return :(((-1./$(comp.VT))*exp(($(at))/$(comp.VT))))
+        elseif wrt == vE
+            return 0.
+        end
+        return 0.
+    end
+    
+    # heuristic for stability linearization again - see dciv for diode
+    v_crit = :(-log10($(comp.Is))/10.)
+    
+    expr = quote
+        if $(vE) - $(vB) > $(v_crit) vEB = $(v_crit) else vEB = $(vE) - $(vB) end
+        if $(vC) - $(vB) > $(v_crit) vCB = $(v_crit) else vCB = $(vC) - $(vB) end
+    end
+
+    if pIn == p1(comp)      # collector
+        push!(expr.args, :((-$(comp.Is))*(($(αf))*($(expeb_d(wrt, :vEB))) - ($(expcb_d(wrt, :vCB))))))
+    elseif pIn == p2(comp)  # base
+        push!(expr.args, :((-$(comp.Is))*((1-($(αf)))*($(expeb_d(wrt, :vEB))) + 
+            (1-($(αr)))*($(expcb_d(wrt, :vCB))))))
+    elseif pIn == p3(comp)  # emitter
+        push!(expr.args, :($(comp.Is)*($(expeb_d(wrt, :vEB)) - $(αr) * $(expcb_d(wrt, :vCB)))))
+    end
+
+    # TODO: limit the value in the same way we limited the diode value
+    # this will probably be at least as unstable as the diode was!
+    return expr
+end
+
+function dcsatisfy(comp::PNP, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
+    
+    # no extra equations
+    return Expr[]
+end
+
+function dcsatisfy_diff(comp::PNP, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
 
     return Expr[]

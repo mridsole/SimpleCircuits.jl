@@ -262,6 +262,7 @@ function dc_sweep(circ::Circuit, sweep_param::Parameter, sweep_range::Any,
 
     cop = CircuitOP{Vector{Float64}}()
 
+    # fill in the solution 
     i = 1
     for (node_or_comp, sym) in sym_map
         cop[node_or_comp] = vec(x[i, :])

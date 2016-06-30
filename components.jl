@@ -253,20 +253,61 @@ type NPN <: Component
     end
 end
 
+type PNP <: Component
+    
+    name::ASCIIString
+
+    # lots of parameters here
+    # reverse saturation current of BE junction
+    Is::Union{Float64, Parameter}
+    # forward β
+    βf::Union{Float64, Parameter}
+    # reverse β
+    βr::Union{Float64, Parameter}
+    # thermal voltage
+    VT::Union{Float64, Parameter}
+
+    # collector port
+    pC::Port
+    # base port
+    pB::Port
+    # emitter port
+    pE::Port
+
+    
+    function PNP(;
+        Is::Union{Float64, Parameter} = 5e-12,
+        βf::Union{Float64, Parameter} = 100.,
+        βr::Union{Float64, Parameter} = 10.,
+        VT::Union{Float64, Parameter} = 0.026,
+        name::ASCIIString = "")
+        
+        this = new(name, Is, βf, βr, VT, Port(), Port(), Port())
+        this.pC.component = this
+        this.pB.component = this
+        this.pE.component = this
+
+        return this
+    end
+end
+
 # the default
 p1(comp::Component) = comp.p1
 p1(comp::DCVoltageSource) = comp.pLow
 p1(comp::DCCurrentSource) = comp.pIn
 p1(comp::Diode) = comp.pIn
 p1(comp::NPN) = comp.pC
+p1(comp::PNP) = comp.pC
 
 p2(comp::Component) = comp.p2
 p2(comp::DCVoltageSource) = comp.pHigh
 p2(comp::DCCurrentSource) = comp.pOut
 p2(comp::Diode) = comp.pOut
 p2(comp::NPN) = comp.pB
+p2(comp::PNP) = comp.pB
 
 p3(comp::NPN) = comp.pE
+p3(comp::PNP) = comp.pE
 
 # get all ports on a component
 ports(comp::Resistor) = [comp.p1, comp.p2]
@@ -276,6 +317,7 @@ ports(comp::DCVoltageSource) = [comp.pLow, comp.pHigh]
 ports(comp::DCCurrentSource) = [comp.pIn, comp.pOut]
 ports(comp::Diode) = [comp.pIn, comp.pOut]
 ports(comp::NPN) = [comp.pC, comp.pB, comp.pE]
+ports(comp::PNP) = [comp.pC, comp.pB, comp.pE]
 
 function parameters(comp::Component)
 

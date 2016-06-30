@@ -36,7 +36,7 @@ function newton(f::Function, J::Function, x0::Vector{Float64},
 
     end
     
-    println("BASD")
+    error("Newton-Raphson failed to converge after 20000 iterations.")
     return x
 end
 
