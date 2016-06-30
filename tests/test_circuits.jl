@@ -136,3 +136,19 @@ macro circuit8()
         connect!(circ, circ.gnd, q1.pE)
     end)
 end
+
+# low pass RC filter
+macro circuit9()
+    
+    esc(quote
+        circ = Circuit()
+        # note: not a DC voltage source!
+        vin = VoltageSource(:(sin(1000*t)))
+        r1 = Resistor(100e+3)
+        c1 = Capacitor(10e-6)
+        connect!(circ, vin.pHigh, r1.p1)
+        connect!(circ, r1.p2, c1.p1, "Vout")
+        connect!(circ, c1.p2, vin.pLow)
+        connect!(circ, vin.pLow, circ.gnd)
+    end)
+end

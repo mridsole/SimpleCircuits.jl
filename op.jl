@@ -1,3 +1,5 @@
+using Sundials
+
 # contains the numerical values for a circuit operating point
 type CircuitOP{T}
     
@@ -266,6 +268,61 @@ function dc_sweep(circ::Circuit, sweep_param::Parameter, sweep_range::Any,
     i = 1
     for (node_or_comp, sym) in sym_map
         cop[node_or_comp] = vec(x[i, :])
+        i += 1
+    end
+
+    return cop
+end
+
+# transient analysis
+function trans_raw(circ::Circuit, time_range::Any;
+    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}(),
+    sym_map=nothing, dt_sym_map=nothing)
+
+    # symbol maps and stuff
+    sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
+    dt_sym_map = dt_sym_map == nothing ? gen_dt_sym_map(sym_map) : dt_sym_map
+    
+    # first find the operating point of the circuit
+    x0 = op_raw(circ; sym_map=sym_map, params=params)
+
+    n = length(x0)
+
+    # initial time derivatives of zero is valid
+    # TODO: this may not be the case - account for it
+    xp0 = zeros(n)
+
+    # symbol maps and stuff
+    sym
+
+    # generate the residual function required by Sundials' DAE solver
+    # this is actually just the 'sys_F' function, but with the differential
+    # voltage and current components from capacitors and inductors 
+    # taken into account
+    res_F = gen_sys_residuals_F(:res_F, sym_map, dt_sym_map, circ)
+
+    # solve it with Sundials
+    res_x, res_xp = Sundials.idasol(res_F, x0, xp0, collect(time_range))
+    
+    return res_x
+end
+
+function trans(circ::Circuit, time_range::Any,
+    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+
+    # generate symbol maps
+    sym_map = gen_sym_map(circ)
+    dt_sym_map = gen_dt_sym_map(sym_map)
+    
+    res_x = trans_raw(circ, time_range; params=params, sym_map=sym_map,
+        dt_sym_map=dt_sym_map)
+
+    # organize the results
+    cop = CircuitOP{Vector{Float64}}()
+    
+    i = 1
+    for (k, v) in sym_map
+        cop[k] = vec(res_x[:, i])
         i += 1
     end
 

@@ -171,6 +171,25 @@ type DCVoltageSource <: TwoPortComponent
 	end
 end
 
+# a general voltage source, for transient analysis
+type VoltageSource <: TwoPortComponent
+    
+    name::ASCIIString
+
+    # voltage as an arbitrary expression
+    V::Union{Expr, Float64, Symbol}
+
+    pHigh::Port
+    pLow::Port
+
+    function VoltageSource(V::Union{Expr, Float64, Symbol})
+        this = new("", V, Port(), Port())
+        this.pHigh.component = this
+        this.pLow.component = this
+        return this
+    end
+end
+
 type DCCurrentSource <: TwoPortComponent
 
     name::ASCIIString
@@ -294,6 +313,7 @@ end
 # the default
 p1(comp::Component) = comp.p1
 p1(comp::DCVoltageSource) = comp.pLow
+p1(comp::VoltageSource) = comp.pLow
 p1(comp::DCCurrentSource) = comp.pIn
 p1(comp::Diode) = comp.pIn
 p1(comp::NPN) = comp.pC
@@ -301,6 +321,7 @@ p1(comp::PNP) = comp.pC
 
 p2(comp::Component) = comp.p2
 p2(comp::DCVoltageSource) = comp.pHigh
+p2(comp::VoltageSource) = comp.pHigh
 p2(comp::DCCurrentSource) = comp.pOut
 p2(comp::Diode) = comp.pOut
 p2(comp::NPN) = comp.pB
@@ -314,6 +335,7 @@ ports(comp::Resistor) = [comp.p1, comp.p2]
 ports(comp::Capacitor) = [comp.p1, comp.p2]
 ports(comp::Inductor) = [comp.p1, comp.p2]
 ports(comp::DCVoltageSource) = [comp.pLow, comp.pHigh]
+ports(comp::VoltageSource) = [comp.pLow, comp.pHigh]
 ports(comp::DCCurrentSource) = [comp.pIn, comp.pOut]
 ports(comp::Diode) = [comp.pIn, comp.pOut]
 ports(comp::NPN) = [comp.pC, comp.pB, comp.pE]
@@ -363,6 +385,10 @@ function other_port{T<:TwoPortComponent}(c::T, p::Port)
 end
 
 function other_port(c::DCVoltageSource, p::Port)
+    return p == c.pHigh ? c.pLow : c.pHigh
+end
+
+function other_port(c::VoltageSource, p::Port)
     return p == c.pHigh ? c.pLow : c.pHigh
 end
 

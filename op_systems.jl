@@ -54,6 +54,20 @@ function gen_sym_map(circ::Circuit)
     return sym_map
 end
 
+# generate the time differential (dt) symbol map for a given symbol map
+function gen_dt_sym_map(sym_map::SymbolMap)
+    
+    dt_sym_map = SymbolMap()
+
+    i = 1
+    for (k, v) in sym_map
+        dt_sym_map[k] = :(xp[$(i)])
+        i += 1
+    end
+
+    return dt_sym_map
+end
+
 # given a symbol map (which contains an ordering of nodes) generate an
 # ordering of circuit components
 function get_components_ordered(sym_map::SymbolMap)
@@ -94,7 +108,12 @@ end
 
 # generate the expressions for the system of equations for a circuit
 # (used in gen_sys_F)
-function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
+function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit,
+    dt_sym_map=nothing)
+
+    # if dt_sym_map is provided, then generate expressions for transient analysis
+    trans_exprs = !(dt_sym_map == nothing)
+    if trans_exprs @assert typeof(dt_sym_map) == SymbolMap end
 
     nodes_vec = collect(circ.nodes)
     n_nodes = length(nodes_vec)
@@ -163,9 +182,21 @@ function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
             for p in ports(port.component)
                 ps[p] = sym_map[p.node]
             end
+            
+            if trans_exprs
 
-            expr = :($(expr) + $(dciv(port.component, ps, port, 
-                get_dum_cur(port.component))))
+                # generate the differential port symbol map
+                dtps = PortSyms()
+                for p in ports(port.component)
+                    dtps[p] = dt_sym_map[p.node]
+                end
+
+                expr = :($(expr) + $(dtiv(port.component, ps, dtps, port,
+                    get_dum_cur(port.component))))
+            else
+                expr = :($(expr) + $(dciv(port.component, ps, port, 
+                    get_dum_cur(port.component))))
+            end
         end
 
         push!(exprs, expr)
@@ -182,10 +213,23 @@ function gen_sys_exprs(sym_map::SymbolMap, circ::Circuit)
             continue
         end
 
-        extra_eqns = dcsatisfy(comp, 
-            PortSyms(p1(comp) => sym_map[p1(comp).node],
-                p2(comp) => sym_map[p2(comp).node]),
-            get_dum_cur(comp))
+        ps = PortSyms()
+        for p in ports(comp)
+            ps[p] = sym_map[p.node]
+        end
+
+        if trans_exprs
+
+            # generate the differential port symbol map
+            dtps = PortSyms()
+            for p in ports(comp)
+                dtps[p] = dt_sym_map[p.node]
+            end
+
+            extra_eqns = dtsatisfy(comp, ps, dtps, get_dum_cur(comp))
+        else
+            extra_eqns = dcsatisfy(comp, ps, get_dum_cur(comp))
+        end
 
         append!(exprs, extra_eqns)
     end
@@ -383,6 +427,38 @@ function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     # place the function in the Generated submodule
     # this is a bit of a hack - but apparently anonymous functions 
     # aren't very fast (FastAnonymous.jl ??)
+    Generated.eval(func_expr)
+    return getfield(Generated, func_label)
+end
+
+# generate the residuals function for transient analysis
+function gen_sys_residuals_F(func_label::Symbol, sym_map::SymbolMap, 
+    dt_sym_map::SymbolMap, circ::Circuit)
+        
+    # passing a dt_sym_map indicates expression generation for transient analysis
+    exprs = gen_sys_exprs(sym_map, circ, dt_sym_map)
+
+    # make the function
+    # TODO: how do we incorporate parameters here?
+    # I have an idea that's better than the way we're doing it for operating point
+    # analysis: place the variables in the 'Generated' module scope and
+    # access them directly, using type assertions in the generated expressions
+    # this is the ideal way of doing it but i don't have much time left
+    func_expr = quote
+        function ($(func_label))(t::Float64, x::Vector{Float64}, 
+            xp::Vector{Float64}, r::Vector{Float64})
+
+            # just set the residuals equal to the expressions
+            $(expr = quote end;
+            for i in eachindex(exprs)
+                push!(expr.args, :(r[$(i)] = $(exprs[i])))
+            end;
+            expr)
+
+            # don't need to return anything
+        end
+    end
+
     Generated.eval(func_expr)
     return getfield(Generated, func_label)
 end

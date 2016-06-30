@@ -19,6 +19,7 @@ typealias PortSyms Dict{Port, Union{Symbol, Expr}}
 
 # specify which components use dummy currents
 uses_dummy_current(comp::DCVoltageSource)   = true
+uses_dummy_current(comp::VoltageSource)     = true
 uses_dummy_current(comp::DCCurrentSource)   = false
 uses_dummy_current(comp::Resistor)          = false
 uses_dummy_current(comp::Capacitor)         = false
@@ -99,9 +100,52 @@ function dcsatisfy(comp::DCCurrentSource, ps::PortSyms, currentSym::Union{Symbol
 end
 
 function dcsatisfy_diff(comp::DCCurrentSource, ps::PortSyms, wrt::Union{Symbol, Expr}, 
-    currenSym::Symbol)
+    currenSym::Union{Symbol, Expr})
 
     return Expr[]
+end
+
+# variable voltage sources really shouldn't be used for DC operating point analysis
+# and here's why - I'm just treating them as short circuit in this case
+function dciv(comp::VoltageSource, ps::PortSyms, pIn::Port, currentSym::Union{Symbol, Expr} = :I)
+
+    # dummy currents for inductors now go from p1 to p2
+    sgn = pIn == p1(comp) ? 1. : -1.
+    return :($(sgn) * $(currentSym))
+end
+
+function dciv_diff(comp::VoltageSource, ps::PortSyms, pIn::Port, wrt::Union{Symbol, Expr},
+    currentSym::Union{Symbol, Expr} = :I)
+
+    # very similar to DCVoltageSource
+    if wrt == currentSym
+        return pIn == p1(comp) ? 1. : -1.
+    else
+        return 0.
+    end
+end
+
+# the two voltages are the same
+function dcsatisfy(comp::VoltageSource, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
+
+    return Expr[:($(ps[p1(comp)]) - $(ps[p2(comp)]))]
+end
+
+# derivatives of that
+function dcsatisfy_diff(comp::VoltageSource, ps::PortSyms, wrt::Union{Symbol, Expr}, 
+    currentSym::Union{Symbol, Expr} = :I)
+
+    if wrt == ps[p1(comp)]
+        eqn1_diff = 1.
+    elseif wrt == ps[p2(comp)]
+        eqn1_diff = -1.
+    elseif wrt == currentSym
+        eqn1_diff = 0.
+    else
+        eqn1_diff = 0.
+    end
+    
+    return [eqn1_diff]
 end
 
 # DC IV relation for a resistor (V = IR)
@@ -191,17 +235,27 @@ function dciv_diff(comp::Inductor, ps::PortSyms, pIn::Port, wrt::Union{Symbol, E
     end
 end
 
-# no other DC relations for an inductor
+# the two voltages are the same
 function dcsatisfy(comp::Inductor, ps::PortSyms, currentSym::Union{Symbol, Expr} = :I)
 
-    return Expr[]
+    return Expr[:($(ps[p1(comp)]) - $(ps[p2(comp)]))]
 end
 
-# ...
+# derivatives of that
 function dcsatisfy_diff(comp::Inductor, ps::PortSyms, wrt::Union{Symbol, Expr}, 
     currentSym::Union{Symbol, Expr} = :I)
+
+    if wrt == ps[p1(comp)]
+        eqn1_diff = 1.
+    elseif wrt == ps[p2(comp)]
+        eqn1_diff = -1.
+    elseif wrt == currentSym
+        eqn1_diff = 0.
+    else
+        eqn1_diff = 0.
+    end
     
-    return Expr[]
+    return [eqn1_diff]
 end
 
 # relations for a diode

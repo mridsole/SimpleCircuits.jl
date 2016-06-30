@@ -112,11 +112,11 @@ Test("DCIV test 5 - test Inductor", function()
     @assert dciv_diff(ind, ps, ind.p2, :v2, :I1) == 0.
     @assert dciv_diff(ind, ps, ind.p2, :I1, :I1) == -1.
 
-    @assert dcsatisfy(ind, ps, :I1) == Expr[]
+    @assert dcsatisfy(ind, ps, :I1) == [:(v1 - v2)]
     
-    @assert dcsatisfy_diff(ind, ps, :v1, :I1) == Expr[]
-    @assert dcsatisfy_diff(ind, ps, :v2, :I1) == Expr[]
-    @assert dcsatisfy_diff(ind, ps, :I1, :I1) == Expr[]
+    @assert dcsatisfy_diff(ind, ps, :v1, :I1) == [1.]
+    @assert dcsatisfy_diff(ind, ps, :v2, :I1) == [-1.]
+    @assert dcsatisfy_diff(ind, ps, :I1, :I1) == [0.]
 end),
 
 Test("DCIV test 6 - test Diode", function()

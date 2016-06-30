@@ -1,13 +1,14 @@
 # MATH3976 project - a simple circuit simulator for developing 
 # analog circuit design intuition
-# dependencies: DataStructures.jl
+# dependencies:     - DataStructures.jl (for ordering circuit ports and nodes)
+#                   - Sundials.jl (for solving DAEs, for transient analysis)
 
 module SimpleCircuits
 
 # need stuff here like resistor, capacitor, inductor, diode, BJT, MOSFET, etc
 include("components.jl")
 export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource
-export Diode, NPN, PNP, p1, p2, p3, parameters
+export Diode, NPN, PNP, p1, p2, p3, parameters, VoltageSource
 export TwoPortComponent, Parameter
 
 # multidimensional newton-raphson iteration
@@ -26,6 +27,10 @@ include("dciv_relations.jl")
 export dciv, dcsatisfy, dciv_diff, dcsatisfy_diff
 export PortSyms
 
+# the same thing, but for DCIV relations differential in time
+include("dtiv_relations.jl")
+export dtiv, dtsatisfy
+
 # display methods
 import Base.show
 include("show.jl")
@@ -34,6 +39,7 @@ export show
 # include op systems (expression generation)
 include("op_systems.jl")
 export gen_sym_map, gen_sys_exprs, gen_sys_F, gen_J_exprs, gen_sys_J
+export gen_sys_residuals_F
 
 # operating point analysis
 # TODO: this is the old, linear only implementation - name this appropriately
