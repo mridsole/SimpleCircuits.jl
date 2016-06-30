@@ -30,9 +30,13 @@ Base.keys(cop::CircuitOP) = append!(keys(cop.node_voltages), keys(cop.dcvs_curre
 function show(io::IO, cop::CircuitOP)
 
     println(io, "Node voltages: ")
-    println(io, cop.node_voltages)
+    for (k, v) in cop.node_voltages
+        println(io, string(v) * " <==> " * string(k.name))
+    end
     println(io, "DCVoltageSource currents: ")
-    println(io, cop.dcvs_currents)
+    for (k, v) in cop.dcvs_currents
+        println(io, string(v) * " <==> " * string(k))
+    end
 end
 
 # methods for linear and non-linear operating point analysis
