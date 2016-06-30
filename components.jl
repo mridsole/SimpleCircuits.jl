@@ -226,7 +226,9 @@ type Diode <: TwoPortComponent
 
     # common "mistake" looks to be passing an integer as n ..
     # so don't type annotate that
-    function Diode(Is::Union{Float64, Parameter}, VT::Union{Float64, Parameter}, n = 1.)
+    function Diode(Is::Union{Float64, Parameter} = 1e-14, 
+        VT::Union{Float64, Parameter} = 0.026, n = 1.)
+
         this = new("", Is, VT, n, Port(), Port())
         this.pIn.component = this
         this.pOut.component = this

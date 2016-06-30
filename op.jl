@@ -306,7 +306,7 @@ function trans_raw(circ::Circuit, time_range::Any;
     res_F = gen_sys_residuals_F(:res_F, sym_map, dt_sym_map, circ)
 
     # solve it with Sundials
-    res_x, res_xp = Sundials.idasol(res_F, x0, xp0, collect(time_range))
+    res_x, res_xp = Sundials.idasol(res_F, x0, xp0, collect(time_range); reltol=1e-8, abstol=1e-9)
     
     return res_x
 end
