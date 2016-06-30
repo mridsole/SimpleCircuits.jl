@@ -1,9 +1,5 @@
 # DC sweep the input to a voltage limiter circuit, and plot the output voltage
 
-workspace()
-include("../SimpleCircuits.jl")
-using SimpleCircuits
-
 circ = Circuit()
 r1 = Resistor(0.5e+3)
 d1 = Diode(1e-11, 0.026, 1.)
@@ -24,6 +20,5 @@ circ_soln = dc_sweep(circ, :V_in, v_in_range, params)
 
 # plot the input voltage against the output voltage - demonstrates that
 # the output voltage is limited by the ~0.6 V 'on' voltage of the diodes
-using PyPlot
 grid(b=true, which="major")
 plot(v_in_range, circ_soln[p1(d1)])

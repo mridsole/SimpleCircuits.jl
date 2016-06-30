@@ -9,13 +9,13 @@ function newton(f::Function, J::Function, x0::Vector{Float64},
     Jx = zeros((length(x), length(x)))
 
     # TODO: generalise tolerance
-    tolerance = 1e-9
+    # (some kind of non-dimensionalization procedure?)
+    tolerance = 1e-11
 
     for i = 1:20000
 
         # i don't know if the type annotations help here,
         # cause we're not using the return values
-        # sleep(1)
 
         # updates fx
         f(x, fx, params)::Vector{Float64}
@@ -35,7 +35,8 @@ function newton(f::Function, J::Function, x0::Vector{Float64},
         x = x + (Jx \ (-fx))
 
     end
-
+    
+    println("BASD")
     return x
 end
 

@@ -238,7 +238,7 @@ type NPN <: Component
 
     
     function NPN(;
-        Is::Union{Float64, Parameter} = 1e-12,
+        Is::Union{Float64, Parameter} = 5e-12,
         βf::Union{Float64, Parameter} = 100.,
         βr::Union{Float64, Parameter} = 10.,
         VT::Union{Float64, Parameter} = 0.026,

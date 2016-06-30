@@ -235,7 +235,7 @@ function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
 end
 
 # operating point analysis, sweeping over gT
-function dc_sweep(circ::Circuit, sweep_param::Parameter, sweep_range::Range{Float64},
+function dc_sweep(circ::Circuit, sweep_param::Parameter, sweep_range::Any,
     params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
     
     # symbol map
