@@ -239,7 +239,8 @@ end
 
 # generate the function describing the system of equations: F = 0
 # place the function in a special sub-module 
-function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
+function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit,
+    trans=false)
 
     # get the system expressions
     # sys_exprs = 
@@ -252,14 +253,13 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     params = parameters(sym_map)
 
     sym1 = :A
-    sym_sym1 = :($(sym1))
 
     func_expr = quote
 
         # x is the vector of node voltage and dummy current variables
         # nv is the memory to write the evaluated equations to
         function $(func_label)(x::Vector{Float64}, nv::Vector{Float64}, 
-            param_vals::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+            param_vals::Parameters = Parameters())
 
             # first, sub all parameter symbols with their numerical values
             $( ex = quote end;
@@ -285,7 +285,11 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
 end
 
 # generate the matrix of expressions representing the jacobian
-function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
+function gen_J_exprs(sym_map::SymbolMap, circ::Circuit,
+    dt_sym_map=nothing)
+
+    trans_exprs = !(dt_sym_map == nothing)
+    if trans_exprs @assert typeof(dt_sym_map) == SymbolMap end
     
     # number of equations we have (= number of variables)
     n_exprs = length(sym_map)
@@ -345,9 +349,22 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit)
                     ps[p] = sym_map[p.node]
                 end
 
-                expr_m[i, j] = :($(expr_m[i, j]) + $(dciv_diff(port.component,
-                    ps, port, sym_map_pairs[j].second, get_dum_cur(port.component)))
-                )
+                if trans_exprs
+
+                    # generate the differential port symbol map
+                    dtps = PortSyms()
+                    for p in ports(port.component)
+                        dtps[p] = dt_sym_map[p.node]
+                    end
+
+                    expr_m[i, j] = :($(expr_m[i, j]) + $(dtiv_diff(port.component, ps,
+                        dtps, port, sym_map_pairs[j].second, get_dum_cur(port.component)))
+                    )
+                else
+                    expr_m[i, j] = :($(expr_m[i, j]) + $(dciv_diff(port.component,
+                        ps, port, sym_map_pairs[j].second, get_dum_cur(port.component)))
+                    )
+                end
             end
         end
     end
@@ -403,7 +420,7 @@ function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
     # make the function
     func_expr = quote
         function ($(func_label))(x::Vector{Float64}, J::Matrix{Float64},
-            param_vals::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+            param_vals::Parameters = Parameters())
 
             # set the parameters equal to their numerical values
             $( ex = quote end;

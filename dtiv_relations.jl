@@ -27,15 +27,6 @@ function dtsatisfy_diff(comp::Component, ps::PortSyms, dtps::PortSyms, wrt, curr
     return dcsatisfy_diff(comp, ps, wrt, currentSym)
 end
 
-# CAREFUL! DC components with dummy currents need to be accounted for
-#function dtiv_diff(comp::DCVoltageSource, ps::PortSyms, dtps::PortSyms, pIn::Port, wrt,
-#    currentSym = :I, dtcurrentSym = :I_)
-#    
-#    #if wrt != currentSym end
-#    #if pIn == p1(comp)
-#    #    return 
-#end
-
 # but for some components - capacitors, inductors, and variable voltage 
 # and current sources, there will be differences
 function dtiv(comp::Capacitor, ps::PortSyms, dtps::PortSyms, pIn::Port, 
@@ -55,6 +46,7 @@ function dtiv_diff(comp::Capacitor, ps::PortSyms, dtps::PortSyms, pIn::Port, wrt
     sgn = pIn == p1(comp) ? 1. : -1.
     sgn *= wrt == dtps[p1(comp)] ? 1. : -1.
 
+    # functionally, this is just zero
     return :($(sgn) * $(comp.C))
 end
 
@@ -83,8 +75,34 @@ function dtiv(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, pIn::Port,
     end
 end
 
+function dtiv_diff(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, pIn::Port, wrt, 
+    currentSym = :I, dtcurrentSym = :I_)
+
+    if wrt == currentSym
+        if pIn == p1(comp)
+            return :(-$(currentSym))
+        else
+            return currentSym
+        end
+    else
+        return 0.
+    end
+end
+
 function dtsatisfy(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, 
     currentSym = :I, dtcurrentSym = :I_)
     
     return [:($(ps[p1(comp)]) - $(ps[p2(comp)]) - $(comp.V))]
+end
+
+function dtsatisfy_diff(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, 
+    wrt, currentSym = :I)
+    
+    if wrt == ps[p1(comp)]
+        return 1.
+    elseif wrt == ps[p2(comp)]
+        return -1.
+    else
+        return 0.
+    end
 end

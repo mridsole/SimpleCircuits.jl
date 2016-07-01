@@ -13,6 +13,9 @@ abstract TwoPortComponent <: Component
 # ... for now just use symbols - but might want to do something more later
 typealias Parameter Symbol
 
+# a list of parameters to pass in
+typealias Parameters Dict{Parameter, Union{Float64, Vector{Float64}}}
+
 # for potential generality later on
 symbol(param::Parameter) = param
 

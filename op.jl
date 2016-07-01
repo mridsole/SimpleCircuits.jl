@@ -200,7 +200,7 @@ function op_linear(circ::Circuit)
 end
 
 function op_raw(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
-    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    params::Parameters = Parameters())
 
     # symbol map
     sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
@@ -222,7 +222,7 @@ end
 
 # newton-raphson for non-linear circuits - return the unmapped voltage/currents
 function op(circ::Circuit; sym_map=nothing, F=nothing, J=nothing, x0=nothing,
-    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    params::Parameters = Parameters())
     
     # symbol map
     sym_map = sym_map == nothing ? gen_sym_map(circ) : sym_map
@@ -242,7 +242,7 @@ end
 
 # operating point analysis, sweeping over gT
 function dc_sweep(circ::Circuit, sweep_param::Parameter, sweep_range::Any,
-    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    params::Parameters = Parameters())
     
     # symbol map
     sym_map = gen_sym_map(circ)
@@ -280,7 +280,7 @@ end
 
 # transient analysis
 function trans_raw(circ::Circuit, time_range::Any;
-    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}(),
+    params::Parameters = Parameters(),
     sym_map=nothing, dt_sym_map=nothing)
 
     # symbol maps and stuff
@@ -312,7 +312,7 @@ function trans_raw(circ::Circuit, time_range::Any;
 end
 
 function trans(circ::Circuit, time_range::Any,
-    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    params::Parameters = Parameters())
 
     # generate symbol maps
     sym_map = gen_sym_map(circ)

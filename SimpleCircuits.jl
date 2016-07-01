@@ -9,7 +9,7 @@ module SimpleCircuits
 include("components.jl")
 export Circuit, Port, Resistor, Capacitor, Inductor, DCVoltageSource, DCCurrentSource
 export Diode, NPN, PNP, p1, p2, p3, parameters, VoltageSource
-export TwoPortComponent, Parameter
+export TwoPortComponent, Parameter, Parameters
 
 # multidimensional newton-raphson iteration
 include("newton.jl")

@@ -1,7 +1,7 @@
 # i couldn't find any available packages for implementing Newton-Raphson - 
 # so here it is
 function newton(f::Function, J::Function, x0::Vector{Float64}, 
-    params::Dict{Parameter, Float64} = Dict{Parameter, Float64}())
+    params::Parameters = Parameters())
     
     x = copy(x0)
     fx = zeros(length(x))
