@@ -32,13 +32,13 @@ end
 function dtiv(comp::Capacitor, ps::PortSyms, dtps::PortSyms, pIn::Port, 
     currentSym = :I, dtcurrentSym = :I_)
 
+    # never touch this again please and thank you
     return :($(comp.C) * ($(dtps[pIn]) - $(dtps[other_port(pIn)])))
 end
 
 function dtiv_diff(comp::Capacitor, ps::PortSyms, dtps::PortSyms, pIn::Port, wrt, 
     currentSym = :I, dtcurrentSym = :I_)
     
-    # confusing ... what if wrt == ps[p1(comp)] ? => is (d/dx) (dx/dt) = 0? yes! (by linearity)
     if !(wrt == dtps[p1(comp)] || wrt == dtps[p2(comp)]) return 0. end
 
     sgn = pIn == p1(comp) ? 1. : -1.
