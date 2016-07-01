@@ -44,7 +44,7 @@ export gen_sys_residuals_F
 # operating point analysis
 # TODO: this is the old, linear only implementation - name this appropriately
 include("op.jl")
-export CircuitOP, op_linear, op_raw, op, dc_sweep, trans_raw, trans
+export CircuitOP, op_linear, op_raw, op, dc_sweep, trans_raw, trans, trans_exp
 
 # include tests
 include("tests/tests.jl")

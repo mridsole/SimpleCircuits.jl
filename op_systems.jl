@@ -245,7 +245,12 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit,
     # get the system expressions
     # sys_exprs = 
 
-    nv_exprs = gen_sys_exprs(sym_map, circ)
+    dt_sym_map = nothing
+    if trans
+        dt_sym_map = gen_dt_sym_map(sym_map)
+    end
+
+    nv_exprs = gen_sys_exprs(sym_map, circ, dt_sym_map)
     n_exprs = length(nv_exprs)
 
     # now, consider that all the parameters are known at "compile" time
@@ -263,6 +268,10 @@ function gen_sys_F(func_label::Symbol, sym_map::SymbolMap, circ::Circuit,
 
             # first, sub all parameter symbols with their numerical values
             $( ex = quote end;
+            if trans 
+                push!(ex.args, :(xp = param_vals[:xp])) 
+                push!(ex.args, :(t = param_vals[:t]))
+            end;
             for param in params
                 # send help
                 push!(ex.args, :($(symbol(param)) = param_vals[$(Meta.quot(param))]))
@@ -405,16 +414,20 @@ function gen_J_exprs(sym_map::SymbolMap, circ::Circuit,
 end
 
 # generate the function returning the Jacobian of the above system
-function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
+function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit,
+    trans = false)
     
     # generate a function that computes the jacobian based on generated exprs
     # (and given a mapping from nodes/comps to voltage/dummy current symbols)
 
-    # get the expressions
-    exprs = gen_J_exprs(sym_map, circ)
+    dt_sym_map = nothing
+    if trans
+        dt_sym_map = gen_dt_sym_map(sym_map)
+    end
 
-    # now, consider that all the parameters are known at "compile" time
-    # (their symbols - not their numerical values, obviously)
+    # get the expressions
+    exprs = gen_J_exprs(sym_map, circ, dt_sym_map)
+
     params = parameters(sym_map)
 
     # make the function
@@ -424,6 +437,10 @@ function gen_sys_J(func_label::Symbol, sym_map::SymbolMap, circ::Circuit)
 
             # set the parameters equal to their numerical values
             $( ex = quote end;
+            if trans 
+                push!(ex.args, :(xp = param_vals[:xp])) 
+                push!(ex.args, :(t = param_vals[:t]))
+            end;
             for param in params
                 # send help
                 push!(ex.args, :($(symbol(param)) = param_vals[$(Meta.quot(param))]))

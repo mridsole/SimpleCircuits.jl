@@ -32,9 +32,7 @@ end
 function dtiv(comp::Capacitor, ps::PortSyms, dtps::PortSyms, pIn::Port, 
     currentSym = :I, dtcurrentSym = :I_)
 
-    sgn = pIn == p1(comp) ? 1. : -1.
-
-    return :($(sgn) * $(comp.C) * ($(dtps[pIn]) - $(dtps[other_port(pIn)])))
+    return :($(comp.C) * ($(dtps[pIn]) - $(dtps[other_port(pIn)])))
 end
 
 function dtiv_diff(comp::Capacitor, ps::PortSyms, dtps::PortSyms, pIn::Port, wrt, 
@@ -67,23 +65,15 @@ end
 function dtiv(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, pIn::Port, 
     currentSym = :I, dtcurrentSym = :I_)
     
-    # return the time derivative of the dummy current symbol with the appropriate sign
-    if pIn == p1(comp)
-        return :(-$(currentSym))
-    else
-        return currentSym
-    end
+    sgn = pIn == comp.pLow ? 1. : -1.
+    return :($(sgn) * $(currentSym))
 end
 
 function dtiv_diff(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, pIn::Port, wrt, 
     currentSym = :I, dtcurrentSym = :I_)
 
     if wrt == currentSym
-        if pIn == p1(comp)
-            return :(-$(currentSym))
-        else
-            return currentSym
-        end
+        return pIn == comp.pLow ? 1. : -1.
     else
         return 0.
     end
@@ -92,15 +82,15 @@ end
 function dtsatisfy(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, 
     currentSym = :I, dtcurrentSym = :I_)
     
-    return [:($(ps[p1(comp)]) - $(ps[p2(comp)]) - $(comp.V))]
+    return [:($(ps[p2(comp)]) - $(ps[p1(comp)]) - $(comp.V))]
 end
 
 function dtsatisfy_diff(comp::VoltageSource, ps::PortSyms, dtps::PortSyms, 
     wrt, currentSym = :I)
     
-    if wrt == ps[p1(comp)]
+    if wrt == ps[p2(comp)]
         return 1.
-    elseif wrt == ps[p2(comp)]
+    elseif wrt == ps[p1(comp)]
         return -1.
     else
         return 0.
